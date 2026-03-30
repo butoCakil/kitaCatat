@@ -1,0 +1,14 @@
+# Config dengan kredensial asli
+config/config.php
+
+# Backup database
+backups/
+
+# Error logs
+dashboard/error_log
+cron/error_log
+logs/incoming.log
+
+# Tools sensitif (opsional, kalau mau extra aman)
+tools/admin_setup.php
+tools/hash.php
