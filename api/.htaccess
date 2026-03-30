@@ -1,0 +1,9 @@
+# KitaCatat — api/.htaccess
+Options -Indexes
+
+# CORS header untuk fetch dari domain sendiri
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "https://kitacatat.masbendz.com"
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type"
+</IfModule>

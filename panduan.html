@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panduan Penggunaan — KitaCatat</title>
+<link rel="icon" type="image/x-icon" href="/assets/img/icon/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green:      #16a34a;
+  --green-dim:  #dcfce7;
+  --green-dark: #14532d;
+  --ink:        #0a0f0d;
+  --ink-soft:   #374151;
+  --ink-muted:  #6b7280;
+  --surface:    #f9fafb;
+  --card:       #ffffff;
+  --border:     #e5e7eb;
+  --wa:         #25D366;
+  --font:       'Sora', sans-serif;
+  --mono:       'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--surface);
+  color: var(--ink);
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+/* ============================================================
+   NAVIGATION / TOC
+============================================================ */
+.toc-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+
+.toc-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 52px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.toc-inner::-webkit-scrollbar { display: none; }
+
+.toc-brand {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--green);
+  white-space: nowrap;
+  margin-right: 12px;
+  text-decoration: none;
+}
+
+.toc-link {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.toc-link:hover {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+/* ============================================================
+   HERO
+============================================================ */
+.hero {
+  background: var(--ink);
+  color: #fff;
+  padding: 72px 24px 56px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(22,163,74,.18) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 80% 30%, rgba(22,163,74,.10) 0%, transparent 70%);
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(22,163,74,.15);
+  border: 1px solid rgba(22,163,74,.3);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6ee7b7;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.hero h1 {
+  font-size: clamp(32px, 6vw, 52px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.hero h1 span { color: var(--green); }
+
+.hero p {
+  font-size: 16px;
+  color: #9ca3af;
+  max-width: 480px;
+  margin: 0 auto 28px;
+  position: relative;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--green);
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  position: relative;
+  transition: background .15s;
+}
+.hero-cta:hover { background: #15803d; }
+
+/* ============================================================
+   MAIN CONTENT
+============================================================ */
+.wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+/* Section */
+.section {
+  margin-top: 60px;
+}
+
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--green);
+  margin-bottom: 8px;
+}
+
+.section-label::before {
+  content: '';
+  width: 20px;
+  height: 2px;
+  background: var(--green);
+  border-radius: 2px;
+}
+
+.section h2 {
+  font-size: clamp(20px, 3.5vw, 26px);
+  font-weight: 800;
+  letter-spacing: -.5px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.section-sub {
+  color: var(--ink-muted);
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+/* ============================================================
+   CHAT BUBBLES
+============================================================ */
+.chat-demo {
+  background: #e5ddd5;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9b99a' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  border-radius: 16px;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.bubble-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.bubble-row.right { flex-direction: row-reverse; }
+
+.bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0,0,0,.12);
+}
+
+.bubble.user {
+  background: #dcf8c6;
+  border-bottom-right-radius: 4px;
+  color: #1a1a1a;
+}
+
+.bubble.bot {
+  background: #fff;
+  border-bottom-left-radius: 4px;
+  color: #1a1a1a;
+}
+
+.bubble-time {
+  font-size: 10px;
+  color: #86a17d;
+  text-align: right;
+  margin-top: 3px;
+}
+
+.bubble strong { font-weight: 700; }
+.bubble code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: rgba(0,0,0,.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.chat-caption {
+  font-size: 12px;
+  color: var(--ink-muted);
+  text-align: center;
+  font-style: italic;
+}
+
+/* ============================================================
+   COMMAND CARDS
+============================================================ */
+.cmd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.cmd-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: box-shadow .15s, transform .15s;
+}
+.cmd-card:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,.08);
+  transform: translateY(-2px);
+}
+
+.cmd-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+.cmd-tag.income  { background: #dcfce7; color: #15803d; }
+.cmd-tag.expense { background: #fee2e2; color: #b91c1c; }
+.cmd-tag.command { background: #dbeafe; color: #1d4ed8; }
+.cmd-tag.saldo   { background: #fef9c3; color: #854d0e; }
+
+.cmd-example {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  background: #f3f4f6;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border-left: 3px solid var(--green);
+}
+
+.cmd-desc {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   TABLES
+============================================================ */
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.doc-table th {
+  background: var(--ink);
+  color: #fff;
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+
+.doc-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.doc-table tr:last-child td { border-bottom: none; }
+.doc-table tr:nth-child(even) td { background: #f9fafb; }
+
+.doc-table td:first-child {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--green-dark);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   INFO BOXES
+============================================================ */
+.info-box {
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
+.info-box.green  { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.info-box.yellow { background: #fefce8; border: 1px solid #fef08a; color: #854d0e; }
+.info-box.blue   { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+
+.info-box .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+/* ============================================================
+   STEP LIST
+============================================================ */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.step-num {
+  width: 32px;
+  height: 32px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.step-body h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.step-body p {
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   DIVIDER
+============================================================ */
+.divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border), transparent);
+  margin: 48px 0;
+}
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.doc-footer {
+  text-align: center;
+  padding: 32px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.doc-footer a { color: var(--green); text-decoration: none; font-weight: 600; }
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width: 640px) {
+  .cmd-grid { grid-template-columns: 1fr; }
+  .doc-table { font-size: 12.5px; }
+  .doc-table td:first-child { white-space: normal; }
+  .toc-link { font-size: 11.5px; padding: 4px 10px; }
+}
+
+.toc-link.active {
+  background: var(--green-dim);
+  color: var(--green);
+  font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     STICKY NAV / TOC
+============================================================ -->
+<nav class="toc-bar">
+  <div class="toc-inner">
+    <!--<a href="#top" class="toc-brand">💬 KitaCatat</a>-->
+    <a href="#top" class="toc-brand" style="display:flex;align-items:center;gap:8px;">
+        <img src="/assets/img/icon/android-chrome-192x192.png" alt="KitaCatat" style="width:28px;height:28px;border-radius:7px;">
+        KitaCatat
+    </a>
+    <a href="#mulai" class="toc-link">Mulai</a>
+    <a href="#catat" class="toc-link">Mencatat</a>
+    <a href="#nominal" class="toc-link">Format Nominal</a>
+    <a href="#rekap" class="toc-link">Rekap</a>
+    <a href="#edit" class="toc-link">Edit & Hapus</a>
+    <a href="#saldo" class="toc-link">Cek Saldo</a>
+    <a href="#grup" class="toc-link">Grup</a>
+    <a href="#dashboard" class="toc-link">Dashboard</a>
+    <a href="#pengingat" class="toc-link">Pengingat</a>
+    <a href="#cari" class="toc-link">Cari</a>
+    <a href="#rekapgrup" class="toc-link">Rekap Grup</a>
+    <a href="#faq" class="toc-link">FAQ</a>
+  </div>
+</nav>
+
+<!-- ============================================================
+     HERO
+============================================================ -->
+<div id="top" class="hero">
+  <div class="hero-tag">📖 Panduan Penggunaan</div>
+  <h1>Catat keuangan<br><span>lewat WhatsApp</span></h1>
+  <p>Panduan lengkap penggunaan KitaCatat — dari cara mencatat transaksi pertama hingga membaca laporan keuangan.</p>
+  <a href="/login.php" class="hero-cta">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    Masuk ke Dashboard
+  </a>
+</div>
+
+<div class="wrap">
+
+<!-- ============================================================
+     SECTION 1: MULAI
+============================================================ -->
+<section class="section" id="mulai">
+  <div class="section-label">01</div>
+  <h2>Cara Memulai</h2>
+  <p class="section-sub">Daftar sekali, langsung bisa pakai seumur hidup.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Daftar akun</h4>
+        <p>Buka <strong><a href="kitacatat.masbendz.com/register" style="text-decoration: none;">kitacatat.masbendz.com/register</a></strong>, isi nama, nomor WA, email, dan password. Nomor WA yang didaftarkan harus sama dengan yang akan dipakai untuk kirim pesan ke bot.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Simpan nomor bot</h4>
+        <p>Simpan nomor WhatsApp bot KitaCatat di kontak HP Anda. Semua pencatatan dilakukan dengan mengirim pesan ke nomor ini.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Kirim pesan pertama</h4>
+        <p>Langsung kirim pesan seperti <strong>"Bensin 50rb"</strong> — sistem akan otomatis mencatat sebagai pengeluaran dan membalas konfirmasi.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Pantau di dashboard</h4>
+        <p>Login ke <strong><a href="kitacatat.masbendz.com" style="text-decoration: none;">kitacatat.masbendz.com</a></strong> untuk melihat grafik, laporan, dan kelola data keuangan Anda.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     SECTION 2: MENCATAT
+============================================================ -->
+<section class="section" id="catat">
+  <div class="section-label">02</div>
+  <h2>Mencatat Transaksi</h2>
+  <p class="section-sub">Cukup kirim pesan biasa — sistem yang akan memahami maksudnya.</p>
+
+  <div class="info-box green">
+    <span class="icon">💡</span>
+    <div>Sistem mendeteksi otomatis apakah transaksi adalah <strong>pemasukan</strong> atau <strong>pengeluaran</strong> berdasarkan kata-kata dalam pesan. Tidak perlu format khusus.</div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:24px 0 14px">Contoh Pengeluaran</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Pengeluaran</span>
+      <div class="cmd-example">Bensin 50rb</div>
+      <div class="cmd-desc">Rp50.000 → Transportasi</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Pengeluaran</span>
+      <div class="cmd-example">Sarapan nasi goreng 20K</div>
+      <div class="cmd-desc">Rp20.000 → Makanan & Minuman</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Pengeluaran</span>
+      <div class="cmd-example">Bayar listrik 350.000</div>
+      <div class="cmd-desc">Rp350.000 → Tagihan & Utilitas</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Pengeluaran</span>
+      <div class="cmd-example">Ganti oli 120rb</div>
+      <div class="cmd-desc">Rp120.000 → Transportasi</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Pengeluaran</span>
+      <div class="cmd-example">Beli obat 85.000</div>
+      <div class="cmd-desc">Rp85.000 → Kesehatan</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Pengeluaran</span>
+      <div class="cmd-example">Transfer ke adik 500rb</div>
+      <div class="cmd-desc">Rp500.000 → Lainnya</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Pengeluaran</span>
+      <div class="cmd-example">Bayar wifi indihome 350rb</div>
+      <div class="cmd-desc">Rp350.000 → Tagihan & Utilitas</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Pengeluaran</span>
+      <div class="cmd-example">Belanja bulanan alfamart 1,2jt</div>
+      <div class="cmd-desc">Rp1.200.000 → Belanja</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Pengeluaran</span>
+      <div class="cmd-example">SPP sekolah anak 750.000</div>
+      <div class="cmd-desc">Rp750.000 → Pendidikan</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Pengeluaran</span>
+      <div class="cmd-example">Donasi masjid 200rb</div>
+      <div class="cmd-desc">Rp200.000 → Sosial & Donasi</div>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:28px 0 14px">Contoh Pemasukan</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <span class="cmd-tag income">Pemasukan</span>
+      <div class="cmd-example">Income gaji 5jt</div>
+      <div class="cmd-desc">Rp5.000.000 → Gaji</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag income">Pemasukan</span>
+      <div class="cmd-example">THR lebaran 2,5jt</div>
+      <div class="cmd-desc">Rp2.500.000 → Bonus & THR</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag income">Pemasukan</span>
+      <div class="cmd-example">Dapat bonus 1jt</div>
+      <div class="cmd-desc">Rp1.000.000 → Bonus & THR</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag income">Pemasukan</span>
+      <div class="cmd-example">Terima transfer dari klien 3jt</div>
+      <div class="cmd-desc">Rp3.000.000 → Transfer Masuk</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag income">Pemasukan</span>
+      <div class="cmd-example">Hasil jualan online 850rb</div>
+      <div class="cmd-desc">Rp850.000 → Usaha</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag income">Pemasukan</span>
+      <div class="cmd-example">Dividen saham 450.000</div>
+      <div class="cmd-desc">Rp450.000 → Investasi</div>
+    </div>
+  </div>
+
+  <!-- Demo chat konfirmasi -->
+  <h3 style="font-size:15px;font-weight:700;margin:28px 0 14px">Balasan setelah mencatat</h3>
+  <div class="chat-demo">
+    <div class="bubble-row right">
+      <div class="bubble user">Sarapan nasi goreng 20K<div class="bubble-time">07.15 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        ✅ Tercatat!<br>
+        <code>[TXN-20260322-0001]</code><br>
+        📉 Pengeluaran: <strong>Rp20.000</strong><br>
+        📝 Sarapan nasi goreng<br>
+        🏷️ Makanan & Minuman
+        <div class="bubble-time">07.15</div>
+      </div>
+    </div>
+  </div>
+  <p class="chat-caption">Setiap transaksi mendapat kode unik TXN yang bisa dipakai untuk edit atau hapus</p>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     SECTION 3: FORMAT NOMINAL
+============================================================ -->
+<section class="section" id="nominal">
+  <div class="section-label">03</div>
+  <h2>Format Penulisan Nominal</h2>
+  <p class="section-sub">Sistem memahami berbagai cara penulisan angka dalam bahasa Indonesia.</p>
+
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>Yang Anda Tulis</th>
+        <th>Dibaca sebagai</th>
+        <th>Contoh Pesan</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>50rb / 50ribu / 50k</td><td>Rp50.000</td><td>Bensin 50rb</td></tr>
+      <tr><td>2jt / 2juta</td><td>Rp2.000.000</td><td>Income gaji 2jt</td></tr>
+      <tr><td>1,5jt / 1.5jt</td><td>Rp1.500.000</td><td>Transfer istri 1,5jt</td></tr>
+      <tr><td>500 ribu</td><td>Rp500.000</td><td>Bayar arisan 500 ribu</td></tr>
+      <tr><td>1.500.000</td><td>Rp1.500.000</td><td>Bayar kontrakan 1.500.000</td></tr>
+      <tr><td>350000</td><td>Rp350.000</td><td>Bayar listrik 350000</td></tr>
+      <tr><td>2,5jt</td><td>Rp2.500.000</td><td>THR 2,5jt</td></tr>
+      <tr><td>10K</td><td>Rp10.000</td><td>Parkir 10K</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     SECTION 4: REKAP
+============================================================ -->
+<section class="section" id="rekap">
+  <div class="section-label">04</div>
+  <h2>Minta Rekap Keuangan</h2>
+  <p class="section-sub">Kirim perintah rekap kapanpun untuk lihat ringkasan pemasukan dan pengeluaran.</p>
+
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <span class="cmd-tag command">Rekap</span>
+      <div class="cmd-example">Rekap</div>
+      <div class="cmd-desc">Rekap pribadi bulan ini (default)</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag command">Rekap</span>
+      <div class="cmd-example">Rekap bulan ini</div>
+      <div class="cmd-desc">Rekap pribadi bulan berjalan</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag command">Rekap</span>
+      <div class="cmd-example">Rekap bulan lalu</div>
+      <div class="cmd-desc">Rekap pribadi bulan sebelumnya</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag command">Rekap</span>
+      <div class="cmd-example">Rekap maret 2026</div>
+      <div class="cmd-desc">Rekap bulan tertentu</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag command">Rekap</span>
+      <div class="cmd-example">Rekap tahun ini</div>
+      <div class="cmd-desc">Rekap seluruh tahun berjalan</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag command">Rekap</span>
+      <div class="cmd-example">Rekap keluarga</div>
+      <div class="cmd-desc">Rekap semua anggota grup yang shared catatan</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag command">Rekap</span>
+      <div class="cmd-example">Rekap keluarga bulan lalu</div>
+      <div class="cmd-desc">Rekap grup bulan sebelumnya</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag command">Rekap</span>
+      <div class="cmd-example">Rekap pribadi</div>
+      <div class="cmd-desc">Rekap hanya catatan Anda sendiri</div>
+    </div>
+  </div>
+
+  <!-- Demo rekap -->
+  <h3 style="font-size:15px;font-weight:700;margin:28px 0 14px">Contoh balasan rekap</h3>
+  <div class="chat-demo">
+    <div class="bubble-row right">
+      <div class="bubble user">Rekap bulan ini<div class="bubble-time">20.00 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        📊 <strong>Rekap Pribadi — Maret 2026</strong><br><br>
+        Pemasukan &nbsp;: Rp5.000.000<br>
+        Pengeluaran: Rp2.350.000<br>
+        🟢 Saldo &nbsp;&nbsp;&nbsp;&nbsp;: Rp2.650.000<br><br>
+        <strong>Top Pengeluaran:</strong><br>
+        1. Transportasi &nbsp; Rp800.000<br>
+        2. Makanan &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rp650.000<br>
+        3. Tagihan &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rp500.000<br><br>
+        Detail lengkap: kitacatat.masbendz.com/dashboard
+        <div class="bubble-time">20.00</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     SECTION 5: EDIT & HAPUS
+============================================================ -->
+<section class="section" id="edit">
+  <div class="section-label">05</div>
+  <h2>Edit & Hapus Transaksi</h2>
+  <p class="section-sub">Gunakan kode TXN dari balasan konfirmasi untuk mengubah atau menghapus catatan.</p>
+
+  <div class="info-box yellow">
+    <span class="icon">⚠️</span>
+    <div>Kode TXN ada di setiap balasan konfirmasi, contoh: <strong>[TXN-20260322-0001]</strong>. Salin kode ini untuk edit atau hapus transaksi tersebut.</div>
+  </div>
+
+  <table class="doc-table" style="margin-top:16px">
+    <thead>
+      <tr>
+        <th>Perintah</th>
+        <th>Fungsi</th>
+        <th>Contoh</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Edit [kode] amount [nominal]</td>
+        <td>Ubah nominal transaksi</td>
+        <td>Edit TXN-20260322-0001 amount 60rb</td>
+      </tr>
+      <tr>
+        <td>Edit [kode] catatan [teks]</td>
+        <td>Ubah deskripsi transaksi</td>
+        <td>Edit TXN-20260322-0001 catatan bensin pertamax</td>
+      </tr>
+      <tr>
+        <td>Edit [kode] kategori [nama]</td>
+        <td>Ubah kategori transaksi</td>
+        <td>Edit TXN-20260322-0001 kategori transportasi</td>
+      </tr>
+      <tr>
+        <td>Hapus [kode]</td>
+        <td>Hapus transaksi</td>
+        <td>Hapus TXN-20260322-0001</td>
+      </tr>
+      <tr>
+        <td>Batal [kode]</td>
+        <td>Sama dengan hapus</td>
+        <td>Batal TXN-20260322-0001</td>
+      </tr>
+      <tr>
+        <td>Ubah [kode] amount [nominal]</td>
+        <td>Sama dengan edit amount</td>
+        <td>Ubah TXN-20260322-0001 amount 75rb</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Demo chat edit -->
+  <div class="chat-demo" style="margin-top:20px">
+    <div class="bubble-row right">
+      <div class="bubble user">Edit TXN-20260322-0001 amount 60rb<div class="bubble-time">07.30 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        ✅ Catatan [TXN-20260322-0001] berhasil diperbarui.
+        <div class="bubble-time">07.30</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     SECTION 6: CEK SALDO
+============================================================ -->
+<section class="section" id="saldo">
+  <div class="section-label">06</div>
+  <h2>Cek & Sesuaikan Saldo</h2>
+  <p class="section-sub">Fitur pintas untuk menyamakan catatan dengan saldo rekening nyata — tanpa perlu input satu per satu.</p>
+
+  <div class="info-box blue">
+    <span class="icon">💡</span>
+    <div>Cocok untuk menyesuaikan saldo setelah banyak potongan otomatis di rekening (admin bank, pajak, cicilan auto-debet) tanpa harus mencatat satu per satu.</div>
+  </div>
+
+  <div class="chat-demo" style="margin-top:20px">
+    <div class="bubble-row right">
+      <div class="bubble user">Saldo saya sekarang 4.235.500<div class="bubble-time">08.00 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        📊 <strong>Cek Saldo</strong><br><br>
+        Saldo kamu &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: Rp4.235.500<br>
+        Saldo KitaCatat: Rp3.800.000<br>
+        Selisih &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: 📈 Rp435.500<br><br>
+        Selisih ini akan dicatat sebagai <strong>pemasukan</strong>.<br>
+        Deskripsinya apa? (contoh: gaji, thr, potongan, transfer)<br><br>
+        Atau balas <strong>batal</strong> untuk membatalkan.
+        <div class="bubble-time">08.00</div>
+      </div>
+    </div>
+    <div class="bubble-row right">
+      <div class="bubble user">Sisa gaji setelah potongan<div class="bubble-time">08.01 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        ✅ Saldo disesuaikan!<br>
+        <code>[TXN-20260322-0005]</code><br>
+        📈 Pemasukan: <strong>Rp435.500</strong><br>
+        📝 Penyesuaian saldo: Sisa gaji setelah potongan<br>
+        🏷️ Gaji
+        <div class="bubble-time">08.01</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box yellow" style="margin-top:16px">
+    <span class="icon">📌</span>
+    <div>Jika saldo yang Anda sebut <strong>lebih kecil</strong> dari catatan KitaCatat, selisih otomatis dicatat sebagai <strong>pengeluaran</strong>. Gunakan fitur ini sesekali, bukan sebagai pengganti pencatatan rutin.</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     SECTION 7: GRUP
+============================================================ -->
+<section class="section" id="grup">
+  <div class="section-label">07</div>
+  <h2>Fitur Grup & Catatan Bersama</h2>
+  <p class="section-sub">Catat keuangan bersama pasangan, keluarga, atau komunitas.</p>
+
+  <h3 style="font-size:15px;font-weight:700;margin:0 0 12px">Dua Tipe Grup</h3>
+  <table class="doc-table">
+    <thead>
+      <tr><th>Tipe</th><th>Cara Mencatat</th><th>Cara Rekap</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Shared Catatan (misal: Keluarga)</td>
+        <td>Kirim pesan biasa tanpa prefix. Catatan pribadi otomatis ikut rekap grup.</td>
+        <td>Rekap keluarga → semua anggota terhitung</td>
+      </tr>
+      <tr>
+        <td>Non-shared (misal: Panitia)</td>
+        <td>Wajib pakai prefix alias: <code>panitia: belanja hadiah 500rb</code></td>
+        <td>Rekap panitia → hanya transaksi dengan prefix panitia</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:15px;font-weight:700;margin:24px 0 12px">Konfirmasi Shared Catatan</h3>
+  <div class="chat-demo">
+    <div class="bubble-row right">
+      <div class="bubble user">Bensin 50rb<div class="bubble-time">07.00 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        ✅ Tercatat!<br>
+        <code>[TXN-20260322-0003]</code><br>
+        📉 Pengeluaran: <strong>Rp50.000</strong><br>
+        📝 Bensin<br>
+        🏷️ Transportasi<br><br>
+        Akan di-share ke grup <strong>Keluarga Kanaya</strong>.<br>
+        Balas <strong>NS</strong> jika tidak ingin di-share.
+        <div class="bubble-time">07.00</div>
+      </div>
+    </div>
+    <div class="bubble-row right">
+      <div class="bubble user">NS<div class="bubble-time">07.01 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        ✅ Oke, catatan [TXN-20260322-0003] tidak di-share ke grup.
+        <div class="bubble-time">07.01</div>
+      </div>
+    </div>
+  </div>
+  <p class="chat-caption">Balas NS (Not Shared) jika tidak ingin catatan masuk rekap grup. Jika tidak dibalas, catatan otomatis masuk grup saat pesan berikutnya dikirim.</p>
+
+  <h3 style="font-size:15px;font-weight:700;margin:24px 0 12px">Alias Anggota Grup</h3>
+  <div class="info-box green">
+    <span class="icon">👥</span>
+    <div>Setiap anggota bisa memberi alias untuk anggota lain sesuai perspektif masing-masing. MasBen menamai Fika sebagai <strong>"istri"</strong>, Fika menamai MasBen sebagai <strong>"suami"</strong>. Alias diatur di <strong>Dashboard → Grup → Kelola Anggota</strong>.</div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:24px 0 12px">Catat untuk Grup Non-Shared</h3>
+  <div class="chat-demo">
+    <div class="bubble-row right">
+      <div class="bubble user">panitia: belanja hadiah lomba 1.500.000<div class="bubble-time">10.00 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        ✅ Tercatat!<br>
+        <code>[TXN-20260322-0004]</code><br>
+        📉 Pengeluaran: <strong>Rp1.500.000</strong><br>
+        📝 Belanja hadiah lomba<br>
+        🏷️ Belanja<br>
+        👥 Grup: Panitia HUT RI
+        <div class="bubble-time">10.00</div>
+      </div>
+    </div>
+  </div>
+  <p class="chat-caption">Format: [alias grup]: [deskripsi] [nominal]. Alias grup diatur di Dashboard → Grup.</p>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     SECTION 8: DASHBOARD
+============================================================ -->
+<section class="section" id="dashboard">
+  <div class="section-label">08</div>
+  <h2>Dashboard Web</h2>
+  <p class="section-sub">Akses melalui browser di <strong>kitacatat.masbendz.com</strong> untuk tampilan lengkap.</p>
+
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <div style="font-size:28px;margin-bottom:10px">📊</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Overview</div>
+      <div class="cmd-desc">Lihat ringkasan bulan ini: pemasukan, pengeluaran, saldo, jumlah transaksi, grafik 6 bulan, dan top kategori pengeluaran.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:28px;margin-bottom:10px">📋</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Transaksi</div>
+      <div class="cmd-desc">Daftar semua transaksi dengan filter tipe, kategori, dan rentang tanggal. Bisa tambah, edit, dan hapus transaksi manual.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:28px;margin-bottom:10px">📈</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Laporan</div>
+      <div class="cmd-desc">Laporan detail dengan grafik tren harian, komposisi pengeluaran per kategori, dan opsi export ke file CSV untuk Excel.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:28px;margin-bottom:10px">👥</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Grup</div>
+      <div class="cmd-desc">Buat dan kelola grup keluarga atau komunitas. Atur alias anggota, aktifkan/nonaktifkan shared catatan.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:28px;margin-bottom:10px">🏷️</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Kategori</div>
+      <div class="cmd-desc">Lihat 16 kategori default sistem. Tambah kategori custom dengan pilihan icon dari Font Awesome.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:28px;margin-bottom:10px">⚙️</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Pengaturan</div>
+      <div class="cmd-desc">Edit nama, email, dan ganti password. Lihat statistik total transaksi dan URL webhook untuk Fonnte.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:28px;margin-bottom:10px">👥</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Rekap Grup</div>
+      <div class="cmd-desc">Ringkasan keuangan bersama per grup lengkap dengan pie chart komposisi pengeluaran dan bar chart per anggota.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:28px;margin-bottom:10px">⏰</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Pengingat Rutin</div>
+      <div class="cmd-desc">Atur pengingat otomatis untuk gaji, tagihan, dan transaksi rutin. Bot WA mengingatkan sesuai jadwal.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:28px;margin-bottom:10px">💬</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Hubungi Admin</div>
+      <div class="cmd-desc">Kirim pertanyaan atau laporan masalah ke admin. Balasan dikirim ke WhatsApp dan bisa dipantau di halaman ini.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     SECTION 8b: PENGINGAT RUTIN
+============================================================ -->
+<div class="divider"></div>
+<section class="section" id="pengingat">
+  <div class="section-label">08</div>
+  <h2>Pengingat & Transaksi Rutin</h2>
+  <p class="section-sub">Atur pengingat otomatis untuk gaji, tagihan, dan transaksi rutin — bot WA akan mengingatkan sesuai jadwal.</p>
+
+  <div class="info-box green">
+    <span class="icon">⏰</span>
+    <div>Pengingat diatur di <a href="/dashboard/scheduled.php" style="color:var(--green);font-weight:700">Dashboard → Pengingat Rutin</a>. Bot WA akan kirim notifikasi otomatis sesuai frekuensi yang dipilih.</div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:24px 0 12px">Cara Menjawab Pengingat via WA</h3>
+  <table class="doc-table">
+    <thead>
+      <tr><th>Balas dengan</th><th>Efek</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>ya / sudah / iya</td><td>Transaksi langsung dicatat otomatis</td></tr>
+      <tr><td>belum</td><td>Diingatkan lagi sesuai interval yang diatur</td></tr>
+      <tr><td>besok</td><td>Ditunda 1 hari</td></tr>
+      <tr><td>lusa</td><td>Ditunda 2 hari</td></tr>
+      <tr><td>tidak / skip</td><td>Pengingat periode ini dilewati</td></tr>
+      <tr><td>350rb (nominal)</td><td>Catat dengan nominal yang disebutkan (mode tanya nominal)</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:15px;font-weight:700;margin:24px 0 12px">Mode Pengingat</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <span class="cmd-tag command">Konfirmasi</span>
+      <div class="cmd-example">Tanya dulu sebelum catat</div>
+      <div class="cmd-desc">Bot tanya "sudah diterima/dibayar?" — user balas ya/belum. Cocok untuk transaksi yang tidak selalu terjadi.</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag income">Otomatis</span>
+      <div class="cmd-example">Langsung catat tanpa tanya</div>
+      <div class="cmd-desc">Transaksi langsung dicatat saat jatuh tempo, bot kirim notifikasi konfirmasi. Cocok untuk cicilan tetap.</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag expense">Tanya Nominal</span>
+      <div class="cmd-example">Bot tanya berapa nominalnya</div>
+      <div class="cmd-desc">Cocok untuk tagihan yang nominalnya berubah tiap bulan seperti listrik, air, atau belanja rutin.</div>
+    </div>
+  </div>
+
+  <div class="chat-demo" style="margin-top:20px">
+    <div class="bubble-row">
+      <div class="bubble bot">
+        ⏰ <strong>Pengingat: Tagihan Wifi</strong><br><br>
+        📉 Pengeluaran: Rp350.000<br>
+        🏷️ Tagihan & Utilitas<br><br>
+        Sudah dibayar?<br>
+        Balas <strong>ya</strong> untuk konfirmasi atau <strong>belum</strong> / <strong>besok</strong> untuk tunda.
+        <div class="bubble-time">07.00</div>
+      </div>
+    </div>
+    <div class="bubble-row right">
+      <div class="bubble user">ya<div class="bubble-time">07.01 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        ✅ Tercatat!<br>
+        <code>[TXN-20260322-0015]</code><br>
+        📉 Pengeluaran: <strong>Rp350.000</strong><br>
+        📝 Tagihan Wifi<br>
+        🏷️ Tagihan & Utilitas
+        <div class="bubble-time">07.01</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 8c: PENCARIAN
+============================================================ -->
+<div class="divider"></div>
+<section class="section" id="cari">
+  <div class="section-label">10</div>
+  <h2>Mencari Transaksi via WA</h2>
+  <p class="section-sub">Cari transaksi langsung dari WhatsApp tanpa perlu buka dashboard.</p>
+
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <span class="cmd-tag command">Cari</span>
+      <div class="cmd-example">Cari bensin</div>
+      <div class="cmd-desc">Tampilkan 5 transaksi terbaru dengan kata "bensin"</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag command">Cari</span>
+      <div class="cmd-example">Cari gaji bulan ini</div>
+      <div class="cmd-desc">Cari transaksi "gaji" di bulan berjalan saja</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag command">Cari</span>
+      <div class="cmd-example">Cari makan</div>
+      <div class="cmd-desc">Semua transaksi yang mengandung kata "makan"</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag command">Cari</span>
+      <div class="cmd-example">Cari transfer</div>
+      <div class="cmd-desc">Cari semua transaksi transfer</div>
+    </div>
+  </div>
+
+  <div class="chat-demo" style="margin-top:20px">
+    <div class="bubble-row right">
+      <div class="bubble user">Cari bensin<div class="bubble-time">10.00 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        🔍 <strong>Hasil pencarian: "bensin"</strong><br>
+        (3 transaksi terbaru)<br><br>
+        [TXN-20260322-0008] 22 Mar 2026<br>
+        📉 Rp50.000 — Bensin motor<br>
+        🏷️ Transportasi<br><br>
+        [TXN-20260318-0003] 18 Mar 2026<br>
+        📉 Rp80.000 — Bensin pertamax<br>
+        🏷️ Transportasi<br><br>
+        [TXN-20260310-0005] 10 Mar 2026<br>
+        📉 Rp50.000 — Bensin<br>
+        🏷️ Transportasi
+        <div class="bubble-time">10.00</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 11b: REKAP GRUP
+============================================================ -->
+<div class="divider"></div>
+<section class="section" id="rekapgrup">
+  <div class="section-label">11</div>
+  <h2>Rekap Grup di Dashboard</h2>
+  <p class="section-sub">Lihat ringkasan keuangan bersama anggota grup lengkap dengan grafik di dashboard web.</p>
+
+  <div class="info-box green">
+    <span class="icon">👥</span>
+    <div>Buka <a href="/dashboard/rekap_grup.php" style="color:var(--green);font-weight:600">Dashboard → Rekap Grup</a> untuk melihat rekap lengkap dengan chart visual per anggota dan per kategori.</div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:20px 0 12px">Fitur Halaman Rekap Grup</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <div style="font-size:24px;margin-bottom:8px">📊</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Filter Fleksibel</div>
+      <div class="cmd-desc">Pilih grup, periode (bulan ini, bulan lalu, 7 hari, tahun ini), dan lingkup (semua anggota atau hanya saya).</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:24px;margin-bottom:8px">🍩</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Pie Chart Pengeluaran</div>
+      <div class="cmd-desc">Visualisasi komposisi pengeluaran per kategori — klik bagian chart untuk melihat nominal.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:24px;margin-bottom:8px">📈</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Bar Chart per Anggota</div>
+      <div class="cmd-desc">Perbandingan pemasukan vs pengeluaran tiap anggota grup secara visual.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:24px;margin-bottom:8px">🧾</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Tabel Kontribusi</div>
+      <div class="cmd-desc">Detail pemasukan, pengeluaran, dan saldo per anggota dalam satu tabel.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 12: FAQ
+============================================================ -->
+<section class="section" id="faq">
+  <div class="section-label">12</div>
+  <h2>Pertanyaan Umum</h2>
+  <p class="section-sub">Jawaban untuk hal-hal yang sering ditanyakan.</p>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+
+    <div class="cmd-card">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">❓ Kenapa pesan saya tidak dibalas?</div>
+      <div class="cmd-desc">Pastikan nomor WA yang dipakai sama dengan yang didaftarkan di akun KitaCatat. Jika nomor berbeda, sistem tidak akan mengenali Anda.</div>
+    </div>
+
+    <div class="cmd-card">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">❓ Apakah kategori bisa salah terdeteksi?</div>
+      <div class="cmd-desc">Ya, bisa. Sistem belajar dari kebiasaan Anda — semakin sering Anda mengkoreksi kategori via dashboard, sistem akan semakin tepat mengenali pola transaksi Anda.</div>
+    </div>
+
+    <div class="cmd-card">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">❓ Bagaimana cara mengkoreksi kategori yang salah?</div>
+      <div class="cmd-desc">Buka Dashboard → Transaksi → klik ikon edit pada transaksi tersebut → ubah kategori. Sistem akan mengingat koreksi ini untuk transaksi serupa berikutnya.</div>
+    </div>
+
+    <div class="cmd-card">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">❓ Apakah data saya aman?</div>
+      <div class="cmd-desc">Data disimpan di database pribadi dengan enkripsi password. Hanya Anda yang bisa mengakses data Anda melalui nomor WA dan akun dashboard.</div>
+    </div>
+
+    <div class="cmd-card">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">❓ Bagaimana cara undang anggota ke grup?</div>
+      <div class="cmd-desc">Buka Dashboard → Grup → klik ⋮ pada grup → Kelola Anggota → masukkan nomor WA anggota baru. Nomor tersebut harus sudah terdaftar di KitaCatat.</div>
+    </div>
+
+    <div class="cmd-card">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">❓ Apa itu NS / Not Shared?</div>
+      <div class="cmd-desc">Jika Anda tergabung dalam grup dengan Shared Catatan aktif, setiap catatan akan ditawarkan untuk di-share ke grup. Balas <strong>NS</strong> dalam pesan berikutnya jika tidak ingin catatan tersebut masuk rekap grup.</div>
+    </div>
+
+    <div class="cmd-card">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">❓ Bisakah satu nomor WA masuk ke beberapa grup?</div>
+      <div class="cmd-desc">Ya. Satu akun bisa tergabung di banyak grup sekaligus — keluarga, komunitas, kepanitiaan, dll. Setiap grup bisa diatur shared atau non-shared secara independen.</div>
+    </div>
+
+    <div class="cmd-card">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">❓ Bagaimana jika transaksi terhapus tidak sengaja?</div>
+      <div class="cmd-desc">Data tidak benar-benar dihapus dari sistem (soft delete). Hubungi admin untuk pemulihan data jika diperlukan.</div>
+    </div>
+
+  </div>
+</section>
+
+</div><!-- .wrap -->
+
+<!-- ============================================================
+     FOOTER
+============================================================ -->
+<div class="doc-footer">
+  <p>KitaCatat &mdash; Pencatatan Keuangan via WhatsApp</p>
+  <p style="margin-top:6px">
+    <a href="/login.php">Dashboard</a> &nbsp;·&nbsp;
+    <a href="/register.php">Daftar</a> &nbsp;·&nbsp;
+    <a href="/panduan.html">Panduan</a>
+  </p>
+</div>
+<script>
+const sections = document.querySelectorAll('.section[id]');
+const tocLinks = document.querySelectorAll('.toc-link');
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            tocLinks.forEach(link => link.classList.remove('active'));
+            const active = document.querySelector(`.toc-link[href="#${entry.target.id}"]`);
+            if (active) {
+                active.classList.add('active');
+                // Auto-scroll toc bar agar link aktif terlihat
+                active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+    });
+}, {
+    rootMargin: '-40% 0px -55% 0px'
+});
+
+sections.forEach(section => observer.observe(section));
+</script>
+
+</body>
+</html>

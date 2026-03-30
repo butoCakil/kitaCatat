@@ -1,0 +1,3 @@
+# KitaCatat — api/admin/.htaccess
+# Hanya bisa diakses via session PHP, tidak langsung dari browser
+Options -Indexes

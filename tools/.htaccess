@@ -1,0 +1,8 @@
+# ============================================================
+# KitaCatat — tools/.htaccess
+# Blokir semua akses — folder ini hanya untuk keperluan setup
+# Idealnya folder ini dihapus setelah setup selesai
+# ============================================================
+
+Order Allow,Deny
+Deny from all
