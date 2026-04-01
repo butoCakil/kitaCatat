@@ -164,9 +164,6 @@ function adminNavActive(string $page, string $current): string {
         </a>
 
         <div class="nav-section-label">Lainnya</div>
-        <a href="/panduan_admin.html" class="nav-link" target="_blank">
-            <i class="fa-solid fa-book"></i> Panduan Admin
-        </a>
         <a href="/admin/cek.php" class="nav-link <?= adminNavActive('cek', $currentPage) ?>">
             <i class="fa-solid fa-list-check"></i> Cek Root
         </a>
@@ -176,6 +173,9 @@ function adminNavActive(string $page, string $current): string {
         
         <a href="/admin/app_settings.php" class="nav-link <?= adminNavActive('app_settings', $currentPage) ?>">
             <i class="fa-solid fa-sliders"></i> App Settings
+        </a>
+        <a href="/panduan_admin.html" class="nav-link" target="_blank">
+            <i class="fa-solid fa-book"></i> Panduan Admin
         </a>
         
         <a href="/dashboard/index.php" class="nav-link" target="_blank">

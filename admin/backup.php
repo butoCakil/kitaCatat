@@ -3,6 +3,26 @@
 // KitaCatat — Admin: Backup Manager
 // ============================================================
 require_once __DIR__ . '/../config/config.php';
+
+// ── Aksi: Download (harus sebelum output HTML apapun) ────────
+$backupDir = __DIR__ . '/../backups/';
+if (isset($_GET['download'])) {
+    $target = basename($_GET['download']);
+    if (preg_match('/^backup_\d{4}-\d{2}-\d{2}\.sql$/', $target)) {
+        $path = $backupDir . $target;
+        if (file_exists($path)) {
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename="' . $target . '"');
+            header('Content-Length: ' . filesize($path));
+            readfile($path);
+            exit;
+        }
+    }
+    // Jika file tidak ditemukan, lanjut render halaman dengan pesan error
+    $message = 'File tidak ditemukan.';
+    $msgType = 'danger';
+}
+
 $pageTitle = 'Backup Database';
 require_once __DIR__ . '/layout/header.php';
 
@@ -58,21 +78,21 @@ if (isset($_POST['action']) && $_POST['action'] === 'backup_now') {
 }
 
 // ── Aksi: Download ───────────────────────────────────────────
-if (isset($_GET['download'])) {
-    $target = basename($_GET['download']);
-    if (preg_match('/^backup_\d{4}-\d{2}-\d{2}\.sql$/', $target)) {
-        $path = $backupDir . $target;
-        if (file_exists($path)) {
-            header('Content-Type: application/octet-stream');
-            header('Content-Disposition: attachment; filename="' . $target . '"');
-            header('Content-Length: ' . filesize($path));
-            readfile($path);
-            exit;
-        }
-    }
-    $message = 'File tidak ditemukan.';
-    $msgType = 'danger';
-}
+// if (isset($_GET['download'])) {
+//     $target = basename($_GET['download']);
+//     if (preg_match('/^backup_\d{4}-\d{2}-\d{2}\.sql$/', $target)) {
+//         $path = $backupDir . $target;
+//         if (file_exists($path)) {
+//             header('Content-Type: application/octet-stream');
+//             header('Content-Disposition: attachment; filename="' . $target . '"');
+//             header('Content-Length: ' . filesize($path));
+//             readfile($path);
+//             exit;
+//         }
+//     }
+//     $message = 'File tidak ditemukan.';
+//     $msgType = 'danger';
+// }
 
 // ── Ambil daftar file backup ─────────────────────────────────
 $files = [];

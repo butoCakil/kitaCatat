@@ -1,3 +1,22 @@
+// ============================================================
+// CSRF Helper
+// ============================================================
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+}
+
+function apiFetch(url, options = {}) {
+    const method = (options.method ?? 'GET').toUpperCase();
+    if (['POST', 'PUT', 'DELETE'].includes(method)) {
+        options.headers = {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': getCsrfToken(),
+            ...(options.headers ?? {})
+        };
+    }
+    return fetch(url, options);
+}
+
 let currentPage   = 1;
 let deleteTarget  = null;
 const modal       = new bootstrap.Modal(document.getElementById("trxModal"));
@@ -157,7 +176,8 @@ async function saveTrx() {
     const method  = id ? "PUT" : "POST";
 
     try {
-        const res  = await fetch(url, { method, headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+        // const res  = await fetch(url, { method, headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+        const res  = await apiFetch(url, { method, body: JSON.stringify(payload) });
         const data = await res.json();
         if (data.success) { modal.hide(); loadTransactions(currentPage); }
         else { alert(data.message ?? "Gagal menyimpan."); }
@@ -176,7 +196,8 @@ function openDeleteModal(t) {
 async function confirmDelete() {
     if (!deleteTarget) return;
     try {
-        const res  = await fetch(`/api/transactions.php?id=${deleteTarget.id}`, { method: "DELETE" });
+        // const res  = await fetch(`/api/transactions.php?id=${deleteTarget.id}`, { method: "DELETE" });
+        const res  = await apiFetch(`/api/transactions.php?id=${deleteTarget.id}`, { method: "DELETE" });
         const data = await res.json();
         if (data.success) { deleteModal.hide(); loadTransactions(currentPage); }
         else { alert(data.message ?? "Gagal menghapus."); }

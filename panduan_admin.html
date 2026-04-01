@@ -4,98 +4,364 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Panduan Admin — KitaCatat</title>
+<link rel="icon" type="image/x-icon" href="/admin/assets/ico/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --red: #dc2626; --red-dim: #fee2e2; --red-dark: #991b1b;
-  --ink: #0a0f0d; --ink-soft: #374151; --ink-muted: #6b7280;
-  --surface: #f9fafb; --card: #fff; --border: #e5e7eb;
-  --font: 'Sora', sans-serif; --mono: 'JetBrains Mono', monospace;
+  --red:        #dc2626;
+  --red-dim:    #fee2e2;
+  --red-dark:   #991b1b;
+  --ink:        #0a0f0d;
+  --ink-soft:   #374151;
+  --ink-muted:  #6b7280;
+  --surface:    #f9fafb;
+  --card:       #ffffff;
+  --border:     #e5e7eb;
+  --font:       'Sora', sans-serif;
+  --mono:       'JetBrains Mono', monospace;
 }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-body { font-family: var(--font); background: var(--surface); color: var(--ink); line-height: 1.6; font-size: 15px; }
 
-.toc-bar { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 24px; }
-.toc-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: 4px; height: 52px; overflow-x: auto; scrollbar-width: none; }
+body {
+  font-family: var(--font);
+  background: var(--surface);
+  color: var(--ink);
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+/* ============================================================
+   NAVIGATION / TOC — struktur identik panduan.html
+============================================================ */
+.toc-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+
+.toc-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 52px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
 .toc-inner::-webkit-scrollbar { display: none; }
-.toc-brand { font-weight: 800; font-size: 15px; color: var(--red); white-space: nowrap; margin-right: 12px; text-decoration: none; }
-.toc-link { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); text-decoration: none; white-space: nowrap; transition: all .15s; }
+
+.toc-brand {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--red);
+  white-space: nowrap;
+  margin-right: 12px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toc-link {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all .15s;
+}
 .toc-link:hover { background: var(--red-dim); color: var(--red); }
+.toc-link.active { background: var(--red-dim); color: var(--red); font-weight: 700; }
 
-.hero { background: #0f172a; color: #fff; padding: 56px 24px 48px; text-align: center; position: relative; overflow: hidden; }
-.hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 50% 60% at 20% 50%, rgba(220,38,38,.12) 0%, transparent 70%); }
-.hero-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(220,38,38,.15); border: 1px solid rgba(220,38,38,.3); border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 600; color: #fca5a5; margin-bottom: 16px; position: relative; }
-.hero h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 800; letter-spacing: -1.5px; position: relative; margin-bottom: 12px; }
-.hero h1 span { color: #f87171; }
-.hero p { font-size: 15px; color: #9ca3af; max-width: 440px; margin: 0 auto; position: relative; }
+/* ============================================================
+   HERO
+============================================================ */
+.hero {
+  background: #0f172a;
+  color: #fff;
+  padding: 72px 24px 56px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
 
-.wrap { max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
-.section { margin-top: 56px; }
-.section-label { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--red); margin-bottom: 8px; }
-.section-label::before { content: ''; width: 20px; height: 2px; background: var(--red); border-radius: 2px; }
-.section h2 { font-size: clamp(18px, 3vw, 24px); font-weight: 800; letter-spacing: -.5px; margin-bottom: 6px; }
-.section-sub { color: var(--ink-muted); font-size: 14px; margin-bottom: 24px; }
-.divider { height: 1px; background: linear-gradient(to right, transparent, var(--border), transparent); margin: 48px 0; }
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(220,38,38,.15) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 80% 30%, rgba(220,38,38,.08) 0%, transparent 70%);
+}
 
-.info-box { border-radius: 10px; padding: 14px 18px; font-size: 13.5px; line-height: 1.6; display: flex; gap: 12px; margin: 16px 0; }
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(220,38,38,.15);
+  border: 1px solid rgba(220,38,38,.3);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fca5a5;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.hero h1 {
+  font-size: clamp(32px, 6vw, 52px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.hero h1 span { color: var(--red); }
+
+.hero p {
+  font-size: 16px;
+  color: #9ca3af;
+  max-width: 480px;
+  margin: 0 auto 28px;
+  position: relative;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--red);
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  position: relative;
+  transition: background .15s;
+}
+.hero-cta:hover { background: var(--red-dark); }
+
+/* ============================================================
+   MAIN CONTENT
+============================================================ */
+.wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+.section { margin-top: 60px; }
+
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--red);
+  margin-bottom: 8px;
+}
+
+.section-label::before {
+  content: '';
+  width: 20px;
+  height: 2px;
+  background: var(--red);
+  border-radius: 2px;
+}
+
+.section h2 {
+  font-size: clamp(20px, 3.5vw, 26px);
+  font-weight: 800;
+  letter-spacing: -.5px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.section-sub {
+  color: var(--ink-muted);
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+/* ============================================================
+   INFO BOXES
+============================================================ */
+.info-box {
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
 .info-box.red    { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
 .info-box.yellow { background: #fefce8; border: 1px solid #fef08a; color: #854d0e; }
 .info-box.blue   { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
 .info-box.green  { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
 .info-box .icon  { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
 
-.doc-table { width: 100%; border-collapse: collapse; font-size: 13.5px; background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-.doc-table th { background: #0f172a; color: #fff; padding: 11px 16px; text-align: left; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
-.doc-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 13px; }
+/* ============================================================
+   TABLES
+============================================================ */
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.doc-table th {
+  background: var(--ink);
+  color: #fff;
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+
+.doc-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  font-size: 13px;
+}
+
 .doc-table tr:last-child td { border-bottom: none; }
 .doc-table tr:nth-child(even) td { background: #f9fafb; }
 .doc-table td:first-child { font-weight: 600; }
 
+/* ============================================================
+   STEPS
+============================================================ */
 .steps { display: flex; flex-direction: column; gap: 16px; }
+
 .step { display: flex; gap: 16px; align-items: flex-start; }
-.step-num { width: 32px; height: 32px; background: var(--red); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+
+.step-num {
+  width: 32px;
+  height: 32px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
 .step-body h4 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
-.step-body p { font-size: 13px; color: var(--ink-muted); line-height: 1.5; }
+.step-body p  { font-size: 13px; color: var(--ink-muted); line-height: 1.5; }
 
-.feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.feature-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-.feature-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
-.feature-card p { font-size: 13px; color: var(--ink-muted); line-height: 1.5; }
-.feature-icon { font-size: 24px; margin-bottom: 10px; display: block; }
+/* ============================================================
+   DIVIDER
+============================================================ */
+.divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border), transparent);
+  margin: 48px 0;
+}
 
-.doc-footer { text-align: center; padding: 28px 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--ink-muted); }
+/* ============================================================
+   CODE
+============================================================ */
+code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #334155;
+}
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.doc-footer {
+  text-align: center;
+  padding: 32px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
 .doc-footer a { color: var(--red); text-decoration: none; font-weight: 600; }
 
-code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #334155; }
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width: 640px) {
+  .doc-table { font-size: 12.5px; }
+  .doc-table td:first-child { white-space: normal; }
+  .toc-link { font-size: 11.5px; padding: 4px 10px; }
+}
 </style>
 </head>
 <body>
 
+<!-- NAV — struktur identik dengan panduan.html -->
 <nav class="toc-bar">
   <div class="toc-inner">
-    <a href="#top" class="toc-brand">🛡️ Admin KitaCatat</a>
+    <a href="#top" class="toc-brand">
+      <img src="/admin/assets/ico/android-chrome-192x192.png" alt="KitaCatat" style="width:28px;height:28px;border-radius:7px;">
+      Admin
+    </a>
     <a href="#akses" class="toc-link">Akses</a>
     <a href="#dashboard" class="toc-link">Dashboard</a>
     <a href="#users" class="toc-link">Users</a>
     <a href="#transaksi" class="toc-link">Transaksi</a>
     <a href="#kategori" class="toc-link">Kategori</a>
     <a href="#broadcast" class="toc-link">Broadcast</a>
+    <a href="#appsettings" class="toc-link">App Settings</a>
+    <a href="#backup" class="toc-link">Backup</a>
+    <a href="#systemcheck" class="toc-link">System Check</a>
     <a href="#support" class="toc-link">Support</a>
     <a href="#logs" class="toc-link">Logs</a>
     <a href="#maintenance" class="toc-link">Maintenance</a>
   </div>
 </nav>
 
+<!-- HERO -->
 <div id="top" class="hero">
   <div class="hero-tag">🛡️ Khusus Admin</div>
   <h1>Panduan <span>Admin Panel</span></h1>
   <p>Panduan lengkap pengelolaan platform KitaCatat dari sisi admin — user, transaksi, broadcast, dan monitoring.</p>
+  <a href="/admin/" class="hero-cta">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    Masuk ke Admin Panel
+  </a>
 </div>
 
 <div class="wrap">
 
+<!-- ============================================================
+     01: AKSES
+============================================================ -->
 <section class="section" id="akses">
   <div class="section-label">01</div>
   <h2>Akses Admin Panel</h2>
@@ -133,6 +399,9 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
 
 <div class="divider"></div>
 
+<!-- ============================================================
+     02: DASHBOARD
+============================================================ -->
 <section class="section" id="dashboard">
   <div class="section-label">02</div>
   <h2>Dashboard Admin</h2>
@@ -155,6 +424,9 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
 
 <div class="divider"></div>
 
+<!-- ============================================================
+     03: USERS
+============================================================ -->
 <section class="section" id="users">
   <div class="section-label">03</div>
   <h2>Manajemen User</h2>
@@ -178,6 +450,9 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
 
 <div class="divider"></div>
 
+<!-- ============================================================
+     04: TRANSAKSI
+============================================================ -->
 <section class="section" id="transaksi">
   <div class="section-label">04</div>
   <h2>Manajemen Transaksi</h2>
@@ -219,6 +494,9 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
 
 <div class="divider"></div>
 
+<!-- ============================================================
+     05: KATEGORI
+============================================================ -->
 <section class="section" id="kategori">
   <div class="section-label">05</div>
   <h2>Manajemen Kategori Global</h2>
@@ -235,13 +513,16 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
       <tr><td>Tambah kategori baru</td><td>Klik Tambah Kategori → isi nama, tipe, dan icon Font Awesome</td></tr>
       <tr><td>Edit nama/icon</td><td>Klik ikon pensil di baris kategori → ubah → Simpan</td></tr>
       <tr><td>Hapus kategori</td><td>Klik ikon tempat sampah → konfirmasi</td></tr>
-      <tr><td>Format icon</td><td>Isi dengan class Font Awesome tanpa prefix fa-, contoh: <code>fa-car</code>, <code>fa-utensils</code></td></tr>
+      <tr><td>Format icon</td><td>Isi dengan class Font Awesome, contoh: <code>fa-car</code>, <code>fa-utensils</code></td></tr>
     </tbody>
   </table>
 </section>
 
 <div class="divider"></div>
 
+<!-- ============================================================
+     06: BROADCAST
+============================================================ -->
 <section class="section" id="broadcast">
   <div class="section-label">06</div>
   <h2>Broadcast WhatsApp</h2>
@@ -275,8 +556,150 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
 
 <div class="divider"></div>
 
-<section class="section" id="support">
+<!-- ============================================================
+     07: APP SETTINGS
+============================================================ -->
+<section class="section" id="appsettings">
   <div class="section-label">07</div>
+  <h2>App Settings</h2>
+  <p class="section-sub">Kelola konfigurasi aplikasi yang bisa diubah tanpa menyentuh file kode.</p>
+
+  <div class="info-box blue">
+    <span class="icon">ℹ️</span>
+    <div>Perubahan App Settings langsung berlaku tanpa perlu restart server. Tersedia di menu Admin → App Settings.</div>
+  </div>
+
+  <table class="doc-table" style="margin-top:16px">
+    <thead><tr><th>Setting</th><th>Fungsi</th><th>Catatan</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>fonnte_token</td>
+        <td>Token API Fonnte untuk kirim pesan WA keluar</td>
+        <td>Field tersembunyi (secret). Kosongkan untuk tidak mengubah.</td>
+      </tr>
+      <tr>
+        <td>webhook_secret</td>
+        <td>Token rahasia validasi request masuk dari Fonnte</td>
+        <td>Harus sama dengan token di URL webhook Fonnte. Field tersembunyi.</td>
+      </tr>
+      <tr>
+        <td>bot_wa_number</td>
+        <td>Nomor WhatsApp bot yang ditampilkan ke user</td>
+        <td>Format 628xxx. Ditampilkan di halaman Pengaturan Akun user.</td>
+      </tr>
+      <tr>
+        <td>bot_name</td>
+        <td>Nama bot yang ditampilkan di beberapa pesan</td>
+        <td>Default: KitaCatat</td>
+      </tr>
+      <tr>
+        <td>admin_wa_number</td>
+        <td>Nomor WA admin untuk menerima notifikasi sistem dan error</td>
+        <td>Format 628xxx. Digunakan untuk notifikasi keamanan dan error tracking.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:15px;font-weight:700;margin:20px 0 12px">Webhook URL</h3>
+  <p style="font-size:13.5px;color:var(--ink-soft);margin-bottom:12px">
+    URL webhook lengkap (dengan token) ditampilkan di panel kanan halaman App Settings — sudah include <code>?token=...</code>. Salin URL ini dan daftarkan di:
+  </p>
+  <div style="background:#0f172a;padding:14px 16px;border-radius:10px;font-family:var(--mono);font-size:12px;color:#6ee7b7">
+    Fonnte Dashboard → Devices → klik device → Webhook URL
+  </div>
+
+  <div class="info-box red" style="margin-top:16px">
+    <span class="icon">⚠️</span>
+    <div>Jika <code>webhook_secret</code> diubah, URL webhook di Fonnte <strong>harus diperbarui</strong> sesuai token baru. Jika tidak, semua pesan WA masuk akan ditolak.</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     08: BACKUP MANAGER
+============================================================ -->
+<section class="section" id="backup">
+  <div class="section-label">08</div>
+  <h2>Backup Manager</h2>
+  <p class="section-sub">Kelola backup database dari admin panel — tanpa perlu akses cPanel.</p>
+
+  <table class="doc-table" style="margin-bottom:16px">
+    <thead><tr><th>Aksi</th><th>Cara</th><th>Catatan</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Backup otomatis</td>
+        <td>Berjalan setiap hari pukul 02.00 via cron job</td>
+        <td>File disimpan di folder <code>backups/</code> di server</td>
+      </tr>
+      <tr>
+        <td>Backup manual</td>
+        <td>Klik tombol <strong>Backup Sekarang</strong> di halaman Backup Manager</td>
+        <td>Berguna sebelum melakukan perubahan besar</td>
+      </tr>
+      <tr>
+        <td>Download backup</td>
+        <td>Klik tombol <strong>⬇ Download</strong> di baris file backup</td>
+        <td>File <code>.sql</code> ter-download langsung ke komputer</td>
+      </tr>
+      <tr>
+        <td>Hapus backup</td>
+        <td>Klik tombol <strong>🗑 Hapus</strong> → konfirmasi</td>
+        <td>Tidak bisa dibatalkan</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-box green">
+    <span class="icon">☁️</span>
+    <div>Backup otomatis juga diupload ke <strong>Google Drive</strong> setiap hari sebagai offsite backup. File di Google Drive disimpan selama 14 hari sebelum dihapus otomatis.</div>
+  </div>
+
+  <div class="info-box yellow" style="margin-top:12px">
+    <span class="icon">💡</span>
+    <div>Backup lokal disimpan maksimal <strong>14 hari</strong> — file lebih lama dihapus otomatis oleh cron. Pastikan folder <code>backups/</code> tidak melebihi kapasitas hosting.</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     09: SYSTEM CHECK
+============================================================ -->
+<section class="section" id="systemcheck">
+  <div class="section-label">09</div>
+  <h2>System Check</h2>
+  <p class="section-sub">Halaman diagnostik untuk memantau kondisi server, struktur folder, skema database, dan error log.</p>
+
+  <div class="info-box red">
+    <span class="icon">🔐</span>
+    <div>Halaman ini dilindungi <strong>dua lapis password</strong> — login admin biasa dan password khusus System Check yang berbeda. Jangan bagikan password System Check ke siapapun.</div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:20px 0 12px">Yang Tersedia di System Check</h3>
+  <table class="doc-table">
+    <thead><tr><th>Informasi</th><th>Kegunaan</th></tr></thead>
+    <tbody>
+      <tr><td>Info Server</td><td>PHP version, memory limit, disk space, APP_URL, DB Host, DB Name, debug mode status</td></tr>
+      <tr><td>Error Log Files</td><td>Daftar semua file error_log di seluruh folder — klik Lihat untuk buka di halaman Logs</td></tr>
+      <tr><td>Struktur Folder</td><td>Tree view lengkap semua file di server — berguna untuk memastikan file tersedia</td></tr>
+      <tr><td>Skema Database</td><td>Daftar semua tabel dan kolom di database — berguna untuk debug query</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:15px;font-weight:700;margin:20px 0 12px">Tombol Kunci</h3>
+  <p style="font-size:13.5px;color:var(--ink-soft)">
+    Setelah selesai, klik tombol <strong>🔒 Kunci</strong> di pojok kanan banner kuning untuk mengakhiri sesi System Check. Halaman akan kembali meminta password khusus saat diakses lagi.
+  </p>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     10: SUPPORT
+============================================================ -->
+<section class="section" id="support">
+  <div class="section-label">10</div>
   <h2>Support Chat</h2>
   <p class="section-sub">Balas pesan dari user yang menghubungi via dashboard atau via WA dengan perintah <code>admin: ...</code></p>
 
@@ -312,8 +735,11 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
 
 <div class="divider"></div>
 
+<!-- ============================================================
+     11: LOGS
+============================================================ -->
 <section class="section" id="logs">
-  <div class="section-label">08</div>
+  <div class="section-label">11</div>
   <h2>System Logs</h2>
   <p class="section-sub">Monitor aktivitas sistem dan audit semua aksi admin.</p>
 
@@ -327,14 +753,17 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
 
   <div class="info-box yellow" style="margin-top:16px">
     <span class="icon">💡</span>
-    <div>Log pesan masuk WA hanya aktif jika <code>DEBUG_MODE = true</code> di <code>config/config.php</code>. Untuk production, nonaktifkan DEBUG_MODE agar log tidak memenuhi disk. Tombol <strong>Clear Log</strong> tersedia di halaman logs.</div>
+    <div>Log pesan masuk WA dikontrol oleh konstanta <code>LOG_INCOMING</code> di <code>config/config.php</code> — terpisah dari <code>DEBUG_MODE</code>. Set <code>LOG_INCOMING = false</code> jika tidak ingin log memenuhi disk. Tombol <strong>Clear Log</strong> tersedia di halaman logs.</div>
   </div>
 </section>
 
 <div class="divider"></div>
 
+<!-- ============================================================
+     12: MAINTENANCE
+============================================================ -->
 <section class="section" id="maintenance">
-  <div class="section-label">09</div>
+  <div class="section-label">12</div>
   <h2>Maintenance & Operasional</h2>
   <p class="section-sub">Panduan untuk tugas operasional rutin.</p>
 
@@ -342,7 +771,7 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
   <table class="doc-table" style="margin-bottom:20px">
     <thead><tr><th>Jadwal</th><th>Script</th><th>Fungsi</th></tr></thead>
     <tbody>
-      <tr><td>Setiap hari 02.00</td><td><code>cron/backup_db.php</code></td><td>Backup database otomatis, simpan 14 hari terakhir di folder <code>backups/</code></td></tr>
+      <tr><td>Setiap hari 02.00</td><td><code>cron/backup_db.php</code></td><td>Backup database otomatis, simpan 14 hari terakhir lokal + upload ke Google Drive</td></tr>
       <tr><td>Setiap hari 07.00</td><td><code>cron/send_notifications.php</code></td><td>Kirim ringkasan harian, rekap mingguan (Senin), dan pengingat terjadwal user</td></tr>
     </tbody>
   </table>
@@ -352,9 +781,10 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
     <thead><tr><th>Frekuensi</th><th>Aksi</th></tr></thead>
     <tbody>
       <tr><td>Mingguan</td><td>Cek folder <code>backups/</code> — pastikan file backup terbentuk setiap hari</td></tr>
+      <tr><td>Mingguan</td><td>Cek Google Drive — pastikan file backup terupload setiap hari</td></tr>
       <tr><td>Mingguan</td><td>Cek System Logs → Audit Admin untuk aktivitas tidak wajar</td></tr>
       <tr><td>Bulanan</td><td>Review user aktif vs user tidak aktif di halaman Manajemen User</td></tr>
-      <tr><td>Jika ada masalah</td><td>Cek error log di <code>logs/</code> atau via cPanel Error Log</td></tr>
+      <tr><td>Jika ada masalah</td><td>Cek error log di System Check atau via cPanel Error Log</td></tr>
     </tbody>
   </table>
 
@@ -366,8 +796,9 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
   <p style="font-size:12px;color:var(--ink-muted);margin-top:8px">Hash password baru bisa dibuat dengan upload sementara file <code>tools/hash.php</code> berisi <code>&lt;?php echo password_hash('passwordbaru', PASSWORD_BCRYPT); ?&gt;</code></p>
 </section>
 
-</div>
+</div><!-- .wrap -->
 
+<!-- FOOTER -->
 <div class="doc-footer">
   <p>KitaCatat Admin Panel — Dokumen Internal</p>
   <p style="margin-top:6px">
@@ -375,7 +806,29 @@ code { font-family: var(--mono); font-size: 12.5px; background: #f1f5f9; padding
     <a href="/panduan.html">Panduan User</a> &nbsp;·&nbsp;
     <a href="/dashboard/">Dashboard User</a>
   </p>
+  <p style="margin-top:8px;font-size:12px">© 2026 KitaCatat &mdash; Bendz Production</p>
 </div>
 
+<script>
+const sections = document.querySelectorAll('.section[id]');
+const tocLinks = document.querySelectorAll('.toc-link');
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            tocLinks.forEach(link => link.classList.remove('active'));
+            const active = document.querySelector(`.toc-link[href="#${entry.target.id}"]`);
+            if (active) {
+                active.classList.add('active');
+                active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+    });
+}, {
+    rootMargin: '-40% 0px -55% 0px'
+});
+
+sections.forEach(section => observer.observe(section));
+</script>
 </body>
 </html>

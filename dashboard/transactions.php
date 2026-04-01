@@ -201,6 +201,7 @@ function formatRp(int $amount): string {
 </div>
 
 <?php
-$extraScript = '<script src="/assets/js/transactions.js"></script>';
+// $extraScript = '<script src="/assets/js/transactions.js"></script>';
+$extraScript = '<script src="/assets/js/transactions.js?v=' . filemtime(__DIR__ . '/../assets/js/transactions.js') . '"></script>';
 require_once __DIR__ . '/layout/footer.php';
 ?>

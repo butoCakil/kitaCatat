@@ -37,6 +37,7 @@ function navActive(string $page, string $current): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?= csrfToken() ?>">
     <title><?= $pageTitle ?? 'Dashboard' ?> — KitaCatat</title>
     <link rel="icon" type="image/x-icon" href="../assets/img/icon/favicon.ico">
 

@@ -26,6 +26,7 @@ $error   = '';
 
 // ── Handle POST ──────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrfVerify();
     $action = $_POST['action'] ?? '';
 
     // ── Hapus akun (harus sebelum output apapun) ─────────────
@@ -61,10 +62,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($chk->fetch()) {
                 $error = 'Email sudah digunakan akun lain.';
             } else {
+                $emailChanged = ($email !== ($user['email'] ?? ''));
                 $db->prepare("UPDATE users SET name = ?, email = ?, updated_at = NOW() WHERE id = ?")
                    ->execute([$name, $email, $userId]);
                 $_SESSION['user_name'] = $name;
                 $success = 'Profil berhasil diperbarui.';
+
+                // Notif jika email berubah
+                if ($emailChanged) {
+                    sendSecurityNotif($user, 'email_changed', ['new_email' => $email]);
+                }
+
                 $stmt->execute([$userId]);
                 $user = $stmt->fetch();
             }
@@ -90,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->prepare("UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?")
                ->execute([$hash, $userId]);
             $success = 'Password berhasil diperbarui.';
+            sendSecurityNotif($user, 'password_changed');
         }
     }
 }
@@ -208,6 +217,7 @@ require_once __DIR__ . '/layout/header.php';
             <div class="card-header"><i class="fa-solid fa-user me-2 text-muted"></i>Edit Profil</div>
             <div class="card-body">
                 <form method="POST">
+                    <?= csrfField() ?>
                     <input type="hidden" name="action" value="profile">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -242,6 +252,7 @@ require_once __DIR__ . '/layout/header.php';
             <div class="card-header"><i class="fa-solid fa-lock me-2 text-muted"></i>Ganti Password</div>
             <div class="card-body">
                 <form method="POST">
+                    <?= csrfField() ?>
                     <input type="hidden" name="action" value="password">
                     <div class="row g-3">
                         <div class="col-12">
@@ -289,6 +300,7 @@ require_once __DIR__ . '/layout/header.php';
 
                 <div id="deleteAccountForm" style="<?= $deleteError ? '' : 'display:none;' ?>margin-top:16px;padding-top:16px;border-top:1px solid #fecaca">
                     <form method="POST">
+                        <?= csrfField() ?>
                         <input type="hidden" name="action" value="delete_account">
                         <label class="form-label" style="font-size:12px;font-weight:600">
                             Masukkan password Anda untuk konfirmasi

@@ -21,6 +21,7 @@ $body   = json_decode(file_get_contents('php://input'), true) ?? [];
 
 // POST — Tambah kategori custom
 if ($method === 'POST') {
+    csrfVerify();
     $name     = trim($body['name'] ?? '');
     $type     = $body['type'] ?? '';
     $icon     = trim($body['icon'] ?? 'fa-tag');
@@ -45,6 +46,7 @@ if ($method === 'POST') {
 
 // PUT — Edit kategori custom milik user
 if ($method === 'PUT' && $id) {
+    csrfVerify();
     $check = $db->prepare("SELECT id FROM categories WHERE id=? AND user_id=?");
     $check->execute([$id, $userId]);
     if (!$check->fetch()) exit(json_encode(['success'=>false,'message'=>'Kategori tidak ditemukan atau bukan milik Anda.']));
@@ -71,6 +73,7 @@ if ($method === 'PUT' && $id) {
 
 // DELETE — Hapus kategori custom milik user
 if ($method === 'DELETE' && $id) {
+    csrfVerify();
     $check = $db->prepare("SELECT id FROM categories WHERE id=? AND user_id=? AND is_default=0");
     $check->execute([$id, $userId]);
     if (!$check->fetch()) exit(json_encode(['success'=>false,'message'=>'Kategori tidak bisa dihapus.']));

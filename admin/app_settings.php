@@ -127,11 +127,24 @@ $settings = $db->query("SELECT * FROM app_settings ORDER BY id ASC")->fetchAll()
             </div>
         </div>
 
+        <?php
+        $webhookSecret  = getAppSetting('webhook_secret', '');
+        $webhookBaseUrl = APP_URL . '/webhook/receive.php';
+        $webhookFullUrl = $webhookBaseUrl . ($webhookSecret ? '?token=' . $webhookSecret : '');
+        ?>
         <div class="card">
             <div class="card-header"><i class="fa-solid fa-link me-2 text-muted"></i>Webhook URL</div>
             <div class="card-body">
                 <div style="font-family:var(--font-mono);font-size:11.5px;background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid var(--card-border);word-break:break-all;color:var(--text-secondary)">
-                    <?= htmlspecialchars(APP_URL . '/webhook/receive.php') ?>
+                    <?= htmlspecialchars($webhookBaseUrl) ?>
+                    <?php if ($webhookSecret): ?>
+                    <span style="color:#94a3b8">?token=</span><span style="color:#f87171;filter:blur(4px);user-select:none;transition:filter .2s" id="tokenBlur"><?= htmlspecialchars($webhookSecret) ?></span>
+                    <button type="button" onclick="toggleToken()" style="background:none;border:none;cursor:pointer;padding:0 4px;font-size:11px;color:#94a3b8" title="Tampilkan/sembunyikan token">
+                        <i class="fa-regular fa-eye" id="eyeToken"></i>
+                    </button>
+                    <?php else: ?>
+                    <span style="color:#f87171"> ⚠ token belum diset</span>
+                    <?php endif; ?>
                 </div>
                 <div class="form-text mt-2" style="font-size:11px">
                     Daftarkan URL ini di Fonnte → Dashboard → Devices → Webhook
@@ -161,12 +174,25 @@ function toggleSecret(key) {
 }
 
 function copyWebhook() {
-    const url   = '<?= APP_URL . '/webhook/receive.php' ?>';
+    const url   = '<?= htmlspecialchars($webhookFullUrl, ENT_QUOTES) ?>';
     const label = document.getElementById('copyLabel');
     navigator.clipboard.writeText(url).then(() => {
         label.textContent = 'Tersalin!';
         setTimeout(() => label.textContent = 'Salin URL', 2000);
     });
+}
+
+function toggleToken() {
+    const el  = document.getElementById('tokenBlur');
+    const eye = document.getElementById('eyeToken');
+    if (!el) return;
+    if (el.style.filter === 'none') {
+        el.style.filter = 'blur(4px)';
+        eye.classList.replace('fa-eye-slash', 'fa-eye');
+    } else {
+        el.style.filter = 'none';
+        eye.classList.replace('fa-eye', 'fa-eye-slash');
+    }
 }
 </script>
 

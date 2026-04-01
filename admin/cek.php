@@ -3,6 +3,57 @@ require_once __DIR__ . '/../config/config.php';
 $pageTitle = 'System Check';
 require_once __DIR__ . '/layout/header.php';
 
+// ============================================================
+// Double protection — password tersendiri untuk halaman ini
+// ============================================================
+define('CEK_PASSWORD', 'kr3$N@n@r@y@n4');
+
+if (isset($_GET['logout'])) {
+    unset($_SESSION['cek_auth']);
+    header('Location: /admin/cek.php');
+    exit;
+}
+
+// Letakkan tepat setelah define('CEK_PASSWORD', ...)
+if (isset($_GET['logout'])) { unset($_SESSION['cek_auth']); header('Location: /admin/cek.php'); exit; }
+
+if (!isset($_SESSION['cek_auth'])) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['cek_pass'] ?? '') === CEK_PASSWORD) {
+        $_SESSION['cek_auth'] = true;
+    } else {
+        $wrongPass = $_SERVER['REQUEST_METHOD'] === 'POST';
+        ?>
+        <div style="max-width:360px;margin:60px auto">
+            <div class="card">
+                <div class="card-header fw-bold">
+                    <i class="fa-solid fa-lock me-2"></i>Akses Terbatas
+                </div>
+                <div class="card-body">
+                    <?php if ($wrongPass): ?>
+                    <div class="alert alert-danger py-2" style="font-size:13px">
+                        Password salah.
+                    </div>
+                    <?php endif; ?>
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label" style="font-size:12px;font-weight:600">Password System Check</label>
+                            <input type="password" name="cek_pass" class="form-control"
+                                   autofocus autocomplete="off" placeholder="Masukkan password">
+                        </div>
+                        <button type="submit" class="btn btn-sm w-100"
+                                style="background:var(--admin-primary);color:#fff;border:none;border-radius:8px">
+                            <i class="fa-solid fa-unlock me-2"></i>Buka
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php
+        require_once __DIR__ . '/layout/footer.php';
+        exit;
+    }
+}
+
 $rootDir = dirname(__DIR__);
 
 // ============================================================
@@ -117,10 +168,18 @@ function fmtBytes(float $b): string {
 ?>
 
 <!-- Security Banner -->
-<div class="alert mb-4" style="background:#fef9c3;border:1px solid #fef08a;border-radius:var(--radius);font-size:13px;color:#854d0e">
-    <i class="fa-solid fa-triangle-exclamation me-2"></i>
-    <strong>File sensitif.</strong> Halaman ini menampilkan struktur folder, skema database, dan konfigurasi server.
-    Pastikan hanya dapat diakses oleh admin dan pertimbangkan untuk menghapus file ini di production.
+<div class="alert mb-4 d-flex align-items-center justify-content-between"
+     style="background:#fef9c3;border:1px solid #fef08a;border-radius:var(--radius);font-size:13px;color:#854d0e">
+    <div>
+        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+        <strong>File sensitif.</strong> Halaman ini menampilkan struktur folder, skema database, dan konfigurasi server.
+    </div>
+    <a href="/admin/cek.php?logout=1"
+       class="btn btn-sm ms-3"
+       style="background:#854d0e;color:#fff;border:none;border-radius:6px;font-size:12px;white-space:nowrap;flex-shrink:0"
+       onclick="return confirm('Keluar dari System Check?')">
+        <i class="fa-solid fa-lock me-1"></i>Kunci
+    </a>
 </div>
 
 <?php if ($hasErrors): ?>

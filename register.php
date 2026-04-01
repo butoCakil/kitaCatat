@@ -17,6 +17,7 @@ $error = '';
 // POST — Step 1: Simpan data sementara + kirim OTP
 // ============================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'request_otp') {
+    csrfVerify();
     $name     = trim($_POST['name']     ?? '');
     $waNumber = preg_replace('/[^0-9]/', '', $_POST['wa_number'] ?? '');
     $email    = strtolower(trim($_POST['email']    ?? ''));
@@ -88,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reque
 // POST — Step 2: Verifikasi OTP + buat akun
 // ============================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'verify_otp') {
+    csrfVerify();
     $inputOtp = trim($_POST['otp'] ?? '');
     $waNumber = $_SESSION['reg_wa'] ?? '';
 
@@ -150,22 +152,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'verif
 // POST — Kirim ulang OTP
 // ============================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resend_otp') {
+    csrfVerify();
     $waNumber = $_SESSION['reg_wa'] ?? '';
     if ($waNumber) {
-        $otp     = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expires = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+        // Rate limit: cek apakah OTP sudah dikirim dalam 2 menit terakhir
+        $stmtCheck = $db->prepare(
+            "SELECT created_at FROM otp_register
+             WHERE wa_number = ? AND created_at > DATE_SUB(NOW(), INTERVAL 2 MINUTE)
+             ORDER BY created_at DESC LIMIT 1"
+        );
+        $stmtCheck->execute([$waNumber]);
+        $lastOtp = $stmtCheck->fetch();
 
-        $db->prepare("DELETE FROM otp_register WHERE wa_number=?")->execute([$waNumber]);
-        $db->prepare(
-            "INSERT INTO otp_register (wa_number, otp_code, expires_at) VALUES (?, ?, ?)"
-        )->execute([$waNumber, $otp, $expires]);
+        if ($lastOtp) {
+            $tunggu = 120 - (time() - strtotime($lastOtp['created_at']));
+            $error  = "Tunggu {$tunggu} detik sebelum kirim ulang OTP.";
+            $step   = 2;
+        } else {
+            $otp     = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $expires = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
-        $otpMsg  = "Kode OTP baru Anda: *{$otp}*\n";
-        $otpMsg .= "Berlaku 10 menit.";
-        WASender::send($waNumber, $otpMsg);
+            $db->prepare("DELETE FROM otp_register WHERE wa_number=?")->execute([$waNumber]);
+            $db->prepare(
+                "INSERT INTO otp_register (wa_number, otp_code, expires_at) VALUES (?, ?, ?)"
+            )->execute([$waNumber, $otp, $expires]);
 
-        $step = 2;
-        $error = ''; // bersihkan error
+            $otpMsg  = "Kode OTP baru Anda: *{$otp}*\n";
+            $otpMsg .= "Berlaku 10 menit.";
+            WASender::send($waNumber, $otpMsg);
+
+            $step  = 2;
+            $error = '';
+        }
     }
 }
 ?>
@@ -227,6 +245,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resen
         <!-- STEP 1: Form Data Diri -->
         <p style="font-size:13px;color:#64748b;margin-bottom:18px">Isi data diri Anda. Kode verifikasi akan dikirim ke WhatsApp.</p>
         <form method="POST">
+            <?= csrfField() ?>
             <input type="hidden" name="action" value="request_otp">
             <div class="mb-3">
                 <label class="form-label">Nama Lengkap</label>
@@ -263,6 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resen
             Kode OTP 6 digit telah dikirim ke WhatsApp <strong><?= $maskedWA ?></strong>. Berlaku 10 menit.
         </p>
         <form method="POST">
+            <?= csrfField() ?>
             <input type="hidden" name="action" value="verify_otp">
             <div class="mb-4">
                 <label class="form-label">Kode OTP</label>
@@ -276,6 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resen
             </button>
         </form>
         <form method="POST">
+            <?= csrfField() ?>
             <input type="hidden" name="action" value="resend_otp">
             <button type="submit" class="btn btn-outline-secondary w-100" style="border-radius:8px;font-size:13px">
                 <i class="fa-solid fa-rotate-right me-2"></i>Kirim ulang OTP
@@ -289,6 +310,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resen
         <div style="text-align:center;margin-top:20px;font-size:13px;color:#94a3b8">
             Sudah punya akun? <a href="/login.php" style="color:#16a34a;font-weight:600">Masuk</a>
         </div>
+    </div>
+    <div style="text-align:center;padding:10px 0 8px;font-size:12px;color:#94a3b8">
+        <a href="/privacy-policy.html"
+           style="color:#94a3b8;text-decoration:none;transition:color .15s"
+           onmouseover="this.style.color='#16a34a'"
+           onmouseout="this.style.color='#94a3b8'">Kebijakan Privasi</a>
+        &nbsp;&nbsp;·&nbsp;&nbsp;
+        <a href="/terms-of-service.html"
+           style="color:#94a3b8;text-decoration:none;transition:color .15s"
+           onmouseover="this.style.color='#16a34a'"
+           onmouseout="this.style.color='#94a3b8'">Syarat &amp; Ketentuan</a>
     </div>
 </div>
 <?php

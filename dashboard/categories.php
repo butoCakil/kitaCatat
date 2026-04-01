@@ -403,6 +403,10 @@ function openEditModal(c) {
     catModal.show();
 }
 
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+}
+
 async function saveCategory() {
     const id       = document.getElementById("catId").value;
     const name     = document.getElementById("catName").value.trim();
@@ -413,8 +417,11 @@ async function saveCategory() {
 
     const method = id ? "PUT" : "POST";
     const url    = id ? `/api/categories.php?id=${id}` : "/api/categories.php";
-    const res    = await fetch(url, { method, headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ name, type, icon, parent_id: parentId ? parseInt(parentId) : null }) });
+    const res    = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
+        body: JSON.stringify({ name, type, icon, parent_id: parentId ? parseInt(parentId) : null })
+    });
     const data   = await res.json();
     if (data.success) { catModal.hide(); location.reload(); }
     else alert(data.message ?? "Gagal menyimpan.");
@@ -422,7 +429,10 @@ async function saveCategory() {
 
 async function deleteCategory(id, name) {
     if (!confirm(`Hapus kategori "${name}"?`)) return;
-    const res  = await fetch(`/api/categories.php?id=${id}`, { method: "DELETE" });
+    const res  = await fetch(`/api/categories.php?id=${id}`, {
+        method: "DELETE",
+        headers: { "X-CSRF-Token": getCsrfToken() }
+    });
     const data = await res.json();
     if (data.success) location.reload();
     else alert(data.message ?? "Gagal menghapus.");

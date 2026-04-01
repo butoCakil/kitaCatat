@@ -25,6 +25,13 @@ $userId = (int) $_SESSION['user_id'];
 $method = $_SERVER['REQUEST_METHOD'];
 $id     = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
+// Ambil data user untuk notifikasi
+function getTrxUser(PDO $db, int $userId): array {
+    $s = $db->prepare("SELECT id, name, wa_number, email FROM users WHERE id = ? LIMIT 1");
+    $s->execute([$userId]);
+    return $s->fetch() ?: [];
+}
+
 // ============================================================
 // GET — List transaksi dengan filter & pagination
 // ============================================================
@@ -120,6 +127,7 @@ if ($method === 'GET' && !$id) {
 // POST — Tambah transaksi baru
 // ============================================================
 if ($method === 'POST') {
+    csrfVerify();
     $body = json_decode(file_get_contents('php://input'), true);
 
     $type       = $body['type']        ?? '';
@@ -152,6 +160,16 @@ if ($method === 'POST') {
     );
     $stmt->execute([$uniqueCode, $userId, $type, $amount, $desc, $categoryId ?: null, $createdAt]);
 
+    $trxUser = getTrxUser($db, $userId);
+    if ($trxUser) {
+        sendSecurityNotif($trxUser, 'transaction_action', [
+            'action'      => 'ditambahkan',
+            'description' => $desc,
+            'amount'      => $amount,
+            'unique_code' => $uniqueCode,
+            'type'        => $type,
+        ]);
+    }
     exit(json_encode(['success' => true, 'unique_code' => $uniqueCode]));
 }
 
@@ -159,6 +177,7 @@ if ($method === 'POST') {
 // PUT — Edit transaksi
 // ============================================================
 if ($method === 'PUT' && $id) {
+    csrfVerify();
     // Pastikan milik user ini
     $check = $db->prepare("SELECT id FROM transactions WHERE id=? AND user_id=? AND deleted_at IS NULL");
     $check->execute([$id, $userId]);
@@ -200,6 +219,11 @@ if ($method === 'PUT' && $id) {
     $params[] = $id;
     $params[] = $userId;
 
+    // Ambil data lama sebelum update
+    $oldStmt = $db->prepare("SELECT description, amount, type, unique_code FROM transactions WHERE id=? AND user_id=?");
+    $oldStmt->execute([$id, $userId]);
+    $oldData = $oldStmt->fetch();
+
     $stmt = $db->prepare("UPDATE transactions SET " . implode(', ', $sets) . " WHERE id=? AND user_id=?");
     $stmt->execute($params);
 
@@ -215,6 +239,20 @@ if ($method === 'PUT' && $id) {
         }
     }
 
+    $trxUser = getTrxUser($db, $userId);
+    if ($trxUser) {
+        sendSecurityNotif($trxUser, 'transaction_action', [
+            'action'        => 'diubah',
+            'description'   => $desc ?? $oldData['description'] ?? '-',
+            'amount'        => $amount ?? $oldData['amount'] ?? 0,
+            'type'          => $type ?? $oldData['type'] ?? '-',
+            'unique_code'   => $oldData['unique_code'] ?? '-',
+            'old_desc'      => $oldData['description'] ?? '-',
+            'old_amount'    => $oldData['amount'] ?? 0,
+            'new_desc'      => $desc ?? null,
+            'new_amount'    => $amount ?? null,
+        ]);
+    }
     exit(json_encode(['success' => true]));
 }
 
@@ -222,15 +260,31 @@ if ($method === 'PUT' && $id) {
 // DELETE — Soft delete transaksi
 // ============================================================
 if ($method === 'DELETE' && $id) {
+    csrfVerify();
     $check = $db->prepare("SELECT id FROM transactions WHERE id=? AND user_id=? AND deleted_at IS NULL");
     $check->execute([$id, $userId]);
     if (!$check->fetch()) {
         exit(json_encode(['success'=>false,'message'=>'Transaksi tidak ditemukan.']));
     }
 
+    // Ambil data sebelum dihapus untuk notif
+    $trxRow = $db->prepare("SELECT description, amount, type, unique_code FROM transactions WHERE id = ?");
+    $trxRow->execute([$id]);
+    $trxRowData = $trxRow->fetch();
+
     $stmt = $db->prepare("UPDATE transactions SET deleted_at=NOW() WHERE id=? AND user_id=?");
     $stmt->execute([$id, $userId]);
 
+    $trxUser = getTrxUser($db, $userId);
+    if ($trxUser && $trxRowData) {
+        sendSecurityNotif($trxUser, 'transaction_action', [
+            'action'      => 'dihapus',
+            'description' => $trxRowData['description'],
+            'amount'      => $trxRowData['amount'],
+            'type'        => $trxRowData['type'],
+            'unique_code' => $trxRowData['unique_code'],
+        ]);
+    }
     exit(json_encode(['success' => true]));
 }
 

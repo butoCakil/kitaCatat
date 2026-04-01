@@ -14,7 +14,22 @@ if (isset($_SESSION['user_id'])) {
 
 $error = '';
 
+// ── Rate limiting: maks 5 percobaan gagal dalam 10 menit ─────
+$maxAttempts  = 5;
+$lockDuration = 600; // 10 menit dalam detik
+
+if (!isset($_SESSION['login_attempts']))  $_SESSION['login_attempts']  = 0;
+if (!isset($_SESSION['login_locked_until'])) $_SESSION['login_locked_until'] = 0;
+
+$isLocked = $_SESSION['login_locked_until'] > time();
+if ($isLocked) {
+    $sisaDetik = $_SESSION['login_locked_until'] - time();
+    $sisaMenit = ceil($sisaDetik / 60);
+    $error = "Terlalu banyak percobaan gagal. Coba lagi dalam {$sisaMenit} menit.";
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrfVerify();
     $login    = trim($_POST['login']    ?? '');  // email atau nomor WA
     $password = trim($_POST['password'] ?? '');
 
@@ -39,14 +54,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ($user && $user['password'] && password_verify($password, $user['password'])) {
+            // Login berhasil — reset counter
+            $_SESSION['login_attempts']    = 0;
+            $_SESSION['login_locked_until'] = 0;
             $_SESSION['user_id']   = $user['id'];
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['wa_number'] = $user['wa_number'];
-
+        
+            // Notif device baru
+            $ip = $_SERVER['REMOTE_ADDR']     ?? '';
+            $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+            if (isNewDevice((int)$user['id'], $ip, $ua)) {
+                sendSecurityNotif($user, 'login_new_device');
+            }
+        
             header('Location: /dashboard/index.php');
             exit;
         } else {
-            $error = 'Email/nomor WA atau password salah.';
+            $_SESSION['login_attempts']++;
+            if ($_SESSION['login_attempts'] >= $maxAttempts) {
+                $_SESSION['login_locked_until'] = time() + $lockDuration;
+                $_SESSION['login_attempts']     = 0;
+                $sisaMenit = ceil($lockDuration / 60);
+                $error = "Terlalu banyak percobaan gagal. Coba lagi dalam {$sisaMenit} menit.";
+            } else {
+                $sisaCoba = $maxAttempts - $_SESSION['login_attempts'];
+                $error = "Email/nomor WA atau password salah. Sisa percobaan: {$sisaCoba}x.";
+        
+                // Notif setelah 3x gagal
+                if ($_SESSION['login_attempts'] === 3 && $user) {
+                    sendSecurityNotif($user, 'login_failed', [
+                        'attempts' => $_SESSION['login_attempts']
+                    ]);
+                }
+            }
         }
     }
 }
@@ -191,6 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST">
+            <?= csrfField() ?>
             <div class="mb-3">
                 <label class="form-label">Email atau Nomor WA</label>
                 <input type="text" name="login" class="form-control"
@@ -213,12 +255,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn-login">
                 <i class="fa-solid fa-right-to-bracket me-2"></i>Masuk
             </button>
+            <div class="text-center mt-3" style="font-size:12px">
+                <a href="/forgot-password.php" style="color:#94a3b8;text-decoration:none"
+                   onmouseover="this.style.color='#16a34a'" onmouseout="this.style.color='#94a3b8'">
+                    Lupa password?
+                </a>
+            </div>
         </form>
         <hr class="my-3" style="border-color:#1e293b">
         <div class="text-center" style="font-size:12px;color:#475569">
             Belum punya akun?
             <a href="/register.php" style="color:#4ade80;font-weight:600;text-decoration:none">Daftar sekarang</a>
         </div>
+    </div>
+    <div style="text-align:center;padding:10px 0 8px;font-size:12px;color:#94a3b8">
+        <a href="/privacy-policy.html"
+           style="color:#94a3b8;text-decoration:none;transition:color .15s"
+           onmouseover="this.style.color='#16a34a'"
+           onmouseout="this.style.color='#94a3b8'">Kebijakan Privasi</a>
+        &nbsp;&nbsp;·&nbsp;&nbsp;
+        <a href="/terms-of-service.html"
+           style="color:#94a3b8;text-decoration:none;transition:color .15s"
+           onmouseover="this.style.color='#16a34a'"
+           onmouseout="this.style.color='#94a3b8'">Syarat &amp; Ketentuan</a>
     </div>
     <div class="login-footer">
         &copy; <?= date('Y') ?> KitaCatat

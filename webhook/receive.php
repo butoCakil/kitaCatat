@@ -12,6 +12,17 @@ require_once __DIR__ . '/../core/CommandHandler.php';
 header('Content-Type: application/json; charset=utf-8');
 
 // ------------------------------------------------------------
+// 0. Validasi token webhook
+// ------------------------------------------------------------
+$webhookToken = getAppSetting('webhook_secret', '');
+$incomingToken = $_GET['token'] ?? '';
+
+if (empty($webhookToken) || $incomingToken !== $webhookToken) {
+    http_response_code(401);
+    exit(json_encode(['status' => false, 'message' => 'Unauthorized']));
+}
+
+// ------------------------------------------------------------
 // 1. Ambil payload dari Fonnte
 // ------------------------------------------------------------
 $json = file_get_contents('php://input');

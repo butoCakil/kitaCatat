@@ -10,6 +10,10 @@ ErrorDocument 403 /404.php
 
 RewriteEngine On
 
+# Redirect HTTP ke HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
 # Redirect root ke index.php
 RewriteRule ^$ index.php [L]
 
@@ -49,5 +53,5 @@ RewriteRule ^tools/     - [F,L]
 <IfModule mod_php.c>
     php_value session.cookie_httponly 1
     php_value session.use_strict_mode 1
-    php_value session.cookie_samesite "Strict"
+    php_value session.cookie_samesite "Lax"
 </IfModule>
