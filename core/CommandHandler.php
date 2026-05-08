@@ -109,11 +109,13 @@ class CommandHandler
 
                 // Simpan transaksi penyesuaian
                 $manager = new TransactionManager($this->user, $this->db);
+                $trxDate = $saldoData['trx_date'] ?? null; // null = hari ini (saldo check biasa)
                 $result  = $manager->save([
                     'type'          => $type,
                     'amount'        => $amount,
                     'description'   => 'Penyesuaian saldo: ' . $desc,
                     'category_name' => $categoryName,
+                    'created_at'    => $trxDate,
                 ], 'saldo_check: ' . $this->message);
 
                 // Hapus pending
@@ -231,6 +233,10 @@ class CommandHandler
 
             case NLPParser::INTENT_SALDO:
                 $this->handleSaldoCheck($parsed);
+                break;
+
+            case NLPParser::INTENT_SALDO_HISTORIS:
+                $this->handleSaldoHistoris($parsed);
                 break;
 
             default:
@@ -367,13 +373,13 @@ class CommandHandler
     // ============================================================
     private function getPendingSaldoCheck(): ?array
     {
-        $likePattern = '{"saldo_riil%';
         $stmt = $this->db->prepare(
             "SELECT * FROM pending_shared
-             WHERE user_id = ? AND status = 'waiting' AND target_groups LIKE ?
-             ORDER BY created_at DESC LIMIT 1"
+            WHERE user_id = ? AND status = 'waiting'
+            AND (target_groups LIKE '{\"saldo_riil%' OR target_groups LIKE '{\"saldo_historis%')
+            ORDER BY created_at DESC LIMIT 1"
         );
-        $stmt->execute([$this->user['id'], $likePattern]);
+        $stmt->execute([$this->user['id']]);
         return $stmt->fetch() ?: null;
     }
 
@@ -1000,6 +1006,101 @@ class CommandHandler
             "Deskripsinya apa? (contoh: gaji, thr, potongan, transfer)
 
 " .
+            "Atau balas *batal* untuk membatalkan."
+        );
+    }
+
+    // ============================================================
+    // HANDLER: Saldo Historis (sisa bulan tertentu)
+    // ============================================================
+    private function handleSaldoHistoris(array $parsed): void
+    {
+        $saldoRiil = (int)$parsed['amount'];
+        $year      = $parsed['year'];
+        $month     = $parsed['month'];
+
+        $dateStart = "{$year}-{$month}-01 00:00:00";
+        $dateEnd   = date('Y-m-t 23:59:59', mktime(0, 0, 0, (int)$month, 1, (int)$year));
+
+        // Saldo KitaCatat bulan tersebut (hanya bulan itu)
+        $stmt = $this->db->prepare(
+            "SELECT
+                SUM(CASE WHEN type='income'  THEN amount ELSE 0 END) AS total_income,
+                SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS total_expense
+            FROM transactions
+            WHERE user_id = ? AND deleted_at IS NULL
+            AND created_at BETWEEN ? AND ?"
+        );
+        $stmt->execute([$this->user['id'], $dateStart, $dateEnd]);
+        $row = $stmt->fetch();
+        $saldoBulanItu = (int)($row['total_income'] ?? 0) - (int)($row['total_expense'] ?? 0);
+
+        // Carry-over sebelum bulan tersebut
+        $stmtCo = $this->db->prepare(
+            "SELECT
+                SUM(CASE WHEN type='income'  THEN amount ELSE 0 END) -
+                SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS carry_over
+            FROM transactions
+            WHERE user_id = ? AND deleted_at IS NULL AND created_at < ?"
+        );
+        $stmtCo->execute([$this->user['id'], $dateStart]);
+        $carryOver   = (int)($stmtCo->fetchColumn() ?? 0);
+        $saldoSistem = $saldoBulanItu + $carryOver;
+        $selisih     = $saldoRiil - $saldoSistem;
+
+        // Label bulan
+        $bulanMap = [
+            '01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April',
+            '05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus',
+            '09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'
+        ];
+        $labelBulan = ($bulanMap[$month] ?? $month) . ' ' . $year;
+
+        if ($selisih === 0) {
+            WASender::send($this->waNumber,
+                "✅ Saldo KitaCatat {$labelBulan} sudah cocok!\n" .
+                "Saldo sistem: " . WASender::formatRupiah($saldoSistem)
+            );
+            return;
+        }
+
+        $tipe      = $selisih > 0 ? 'pemasukan' : 'pengeluaran';
+        $tipeIcon  = $selisih > 0 ? '📈' : '📉';
+        $selisihAbs = abs($selisih);
+
+        // Simpan pending dengan tanggal penyesuaian = akhir bulan tersebut
+        $this->db->prepare(
+            "DELETE FROM pending_shared WHERE user_id = ? AND target_groups LIKE '{\"saldo_historis%'"
+        )->execute([$this->user['id']]);
+
+        $this->db->prepare(
+            "INSERT INTO pending_shared (transaction_id, user_id, target_groups, status)
+            VALUES (0, ?, ?, 'waiting')"
+        )->execute([
+            $this->user['id'],
+            json_encode([
+                'saldo_historis' => true,
+                'saldo_riil'     => $saldoRiil,
+                'saldo_sistem'   => $saldoSistem,
+                'selisih'        => $selisih,
+                'trx_date'       => $dateEnd, // transaksi dicatat di akhir bulan tersebut
+                'label_bulan'    => $labelBulan,
+                'carry_over'     => $carryOver,
+                'saldo_bulan'    => $saldoBulanItu,
+            ])
+        ]);
+
+        $coSign = $carryOver >= 0 ? '＋' : '−';
+
+        WASender::send($this->waNumber,
+            "📊 *Saldo Sebelumnya — {$labelBulan}*\n\n" .
+            "Saldo kamu          : " . WASender::formatRupiah($saldoRiil) . "\n" .
+            "Saldo KitaCatat     : " . WASender::formatRupiah($saldoSistem) . "\n" .
+            "  Bulan {$labelBulan} : " . WASender::formatRupiah(abs($saldoBulanItu)) . "\n" .
+            "  {$coSign} Saldo sebelumnya : " . WASender::formatRupiah(abs($carryOver)) . "\n" .
+            "Selisih             : {$tipeIcon} " . WASender::formatRupiah($selisihAbs) . "\n\n" .
+            "Selisih ini akan dicatat sebagai *{$tipe}* di akhir {$labelBulan}.\n" .
+            "Deskripsinya apa? (contoh: potongan, transfer, penyesuaian)\n\n" .
             "Atau balas *batal* untuk membatalkan."
         );
     }

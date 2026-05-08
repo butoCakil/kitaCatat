@@ -12,7 +12,8 @@ class NLPParser
     const INTENT_EDIT    = 'edit';
     const INTENT_HAPUS   = 'hapus';
     const INTENT_NS      = 'ns';
-    const INTENT_SALDO   = 'saldo_check';
+    const INTENT_SALDO              = 'saldo_check';
+    const INTENT_SALDO_HISTORIS     = 'saldo_historis';
     const INTENT_SUPPORT = 'support_message';
     const INTENT_HELP    = 'help';
     const INTENT_CARI    = 'cari';
@@ -39,8 +40,9 @@ class NLPParser
         if (self::isCari($msg))            return self::parseCari($msg);
         if (self::isHelp($msg))           return ['intent' => self::INTENT_HELP];
         if (self::isSupportMessage($msg)) return self::parseSupportMessage($msg);
-        if (self::isSaldoCheck($msg)) return self::parseSaldoCheck($msg);
-        if (self::isCatatan($msg)) return self::parseCatatan($msg, $categories, $userId, $db);
+        if (self::isSaldoHistoris($msg)) return self::parseSaldoHistoris($msg);
+        if (self::isSaldoCheck($msg))    return self::parseSaldoCheck($msg);
+        if (self::isCatatan($msg))       return self::parseCatatan($msg, $categories, $userId, $db);
 
         return ['intent' => self::INTENT_UNKNOWN];
     }
@@ -86,6 +88,76 @@ class NLPParser
         return [
             'intent' => self::INTENT_SALDO,
             'amount' => $amount,
+        ];
+    }
+
+    private static function isSaldoHistoris(string $msg): bool
+    {
+        // Harus ada kata "sisa"
+        if (!preg_match('/\bsisa\b/i', $msg)) return false;
+        // Harus ada nominal
+        if (!preg_match('/\d/', $msg)) return false;
+        // Harus ada penanda periode (bulan lalu, bulan kemarin, nama bulan, N bulan lalu)
+        if (!preg_match('/\b(bulan\s+(lalu|kemarin)|januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember|\d+\s+bulan\s+lalu)\b/i', $msg)) return false;
+        return true;
+    }
+
+    private static function parseSaldoHistoris(string $msg): array
+    {
+        $amount = self::extractAmount($msg);
+        if ($amount <= 0) return ['intent' => self::INTENT_UNKNOWN];
+
+        $lower = strtolower($msg);
+        $now   = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
+
+        // Pattern: "N bulan lalu"
+        if (preg_match('/(\d+)\s+bulan\s+lalu/i', $msg, $m)) {
+            $n     = (int)$m[1];
+            $dt    = (clone $now)->modify("-{$n} months");
+            $year  = $dt->format('Y');
+            $month = $dt->format('m');
+        }
+        // Pattern: "bulan lalu" / "bulan kemarin"
+        elseif (preg_match('/bulan\s+(lalu|kemarin)/i', $msg)) {
+            $dt    = (clone $now)->modify('-1 month');
+            $year  = $dt->format('Y');
+            $month = $dt->format('m');
+        }
+        // Pattern: nama bulan (+ tahun opsional)
+        else {
+            $bulanMap = [
+                'januari'=>'01','februari'=>'02','maret'=>'03','april'=>'04',
+                'mei'=>'05','juni'=>'06','juli'=>'07','agustus'=>'08',
+                'september'=>'09','oktober'=>'10','november'=>'11','desember'=>'12'
+            ];
+            $month = null;
+            $year  = $now->format('Y');
+
+            foreach ($bulanMap as $nama => $nomor) {
+                if (str_contains($lower, $nama)) {
+                    $month = $nomor;
+                    break;
+                }
+            }
+
+            // Cek apakah ada tahun eksplisit (4 digit)
+            if (preg_match('/\b(20\d{2})\b/', $msg, $m)) {
+                $year = $m[1];
+            }
+
+            if (!$month) return ['intent' => self::INTENT_UNKNOWN];
+
+            // Validasi: bulan yang dimaksud harus sebelum bulan ini
+            $targetDate = new DateTime("{$year}-{$month}-01", new DateTimeZone('Asia/Jakarta'));
+            $thisMonth  = new DateTime($now->format('Y-m') . '-01', new DateTimeZone('Asia/Jakarta'));
+            if ($targetDate >= $thisMonth) return ['intent' => self::INTENT_UNKNOWN];
+        }
+
+        return [
+            'intent' => self::INTENT_SALDO_HISTORIS,
+            'amount' => $amount,
+            'year'   => $year,
+            'month'  => $month,
         ];
     }
 

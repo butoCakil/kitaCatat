@@ -30,11 +30,14 @@ class TransactionManager
         $uniqueCode = $this->generateUniqueCode();
 
         try {
+            $customDate = !empty($parsed['created_at']) ? $parsed['created_at'] : null;
+
             $stmt = $this->db->prepare(
                 "INSERT INTO transactions
-                    (unique_code, user_id, group_id, type, amount, description, category_id, raw_message, source)
-                 VALUES
-                    (:unique_code, :user_id, :group_id, :type, :amount, :description, :category_id, :raw_message, 'wa')"
+                    (unique_code, user_id, group_id, type, amount, description, category_id, raw_message, source, created_at)
+                VALUES
+                    (:unique_code, :user_id, :group_id, :type, :amount, :description, :category_id, :raw_message, 'wa',
+                    COALESCE(:created_at, NOW()))"
             );
             $stmt->execute([
                 ':unique_code'  => $uniqueCode,
@@ -45,6 +48,7 @@ class TransactionManager
                 ':description'  => $parsed['description'],
                 ':category_id'  => $categoryId,
                 ':raw_message'  => $rawMessage,
+                ':created_at'   => $customDate,
             ]);
 
             $transactionId = (int) $this->db->lastInsertId();
