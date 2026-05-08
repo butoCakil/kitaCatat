@@ -947,6 +947,82 @@ body {
     <span class="icon">📌</span>
     <div>Jika saldo yang Anda sebut <strong>lebih kecil</strong> dari catatan KitaCatat, selisih otomatis dicatat sebagai <strong>pengeluaran</strong>. Gunakan fitur ini sesekali, bukan sebagai pengganti pencatatan rutin.</div>
   </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:28px 0 14px">Sesuaikan Saldo Bulan Sebelumnya</h3>
+  <p style="font-size:13.5px;color:var(--ink-muted);margin-bottom:16px">Gunakan fitur ini untuk memasukkan saldo rekening di akhir bulan-bulan sebelumnya — cocok saat pertama kali setup atau setelah lupa mencatat.</p>
+
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <span class="cmd-tag saldo">Saldo Historis</span>
+      <div class="cmd-example">sisa bulan lalu 2jt</div>
+      <div class="cmd-desc">Sesuaikan saldo akhir bulan lalu dengan Rp2.000.000</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag saldo">Saldo Historis</span>
+      <div class="cmd-example">bulan lalu sisa 500rb</div>
+      <div class="cmd-desc">Format alternatif — urutan kata bisa dibalik</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag saldo">Saldo Historis</span>
+      <div class="cmd-example">sisa april 1,5jt</div>
+      <div class="cmd-desc">Sesuaikan saldo akhir bulan April tahun ini</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag saldo">Saldo Historis</span>
+      <div class="cmd-example">februari lalu sisa 800rb</div>
+      <div class="cmd-desc">Sesuaikan saldo akhir bulan Februari</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag saldo">Saldo Historis</span>
+      <div class="cmd-example">sisa 2 bulan lalu 3jt</div>
+      <div class="cmd-desc">Sesuaikan saldo 2 bulan yang lalu</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag saldo">Saldo Historis</span>
+      <div class="cmd-example">bulan kemarin sisa 1,2jt</div>
+      <div class="cmd-desc">"Kemarin" juga dikenali sebagai bulan lalu</div>
+    </div>
+  </div>
+
+  <div class="chat-demo" style="margin-top:20px">
+    <div class="bubble-row right">
+      <div class="bubble user">sisa april 1,5jt<div class="bubble-time">09.00 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        📊 <strong>Saldo Sebelumnya — April 2026</strong><br><br>
+        Saldo kamu &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: Rp1.500.000<br>
+        Saldo KitaCatat &nbsp;&nbsp;&nbsp;: Rp1.250.000<br>
+        &nbsp;&nbsp;Bulan April 2026 : Rp800.000<br>
+        &nbsp;&nbsp;＋ Saldo sebelumnya: Rp450.000<br>
+        Selisih &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: 📈 Rp250.000<br><br>
+        Selisih ini akan dicatat sebagai <strong>pemasukan</strong> di akhir April 2026.<br>
+        Deskripsinya apa? (contoh: potongan, transfer, penyesuaian)<br><br>
+        Atau balas <strong>batal</strong> untuk membatalkan.
+        <div class="bubble-time">09.00</div>
+      </div>
+    </div>
+    <div class="bubble-row right">
+      <div class="bubble user">penyesuaian awal setup<div class="bubble-time">09.01 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        ✅ Saldo disesuaikan!<br>
+        <code>[TXN-20260430-0001]</code><br>
+        📈 Pemasukan: <strong>Rp250.000</strong><br>
+        📝 Penyesuaian saldo: penyesuaian awal setup<br>
+        🏷️ Lainnya
+        <div class="bubble-time">09.01</div>
+      </div>
+    </div>
+  </div>
+  <p class="chat-caption">Transaksi penyesuaian dicatat di tanggal akhir bulan yang dimaksud, bukan hari ini.</p>
+
+  <div class="info-box blue" style="margin-top:16px">
+    <span class="icon">💡</span>
+    <div>Untuk menyesuaikan saldo <strong>bulan ini</strong>, gunakan: <code>Saldo sekarang [nominal]</code><br>
+    Fitur saldo historis hanya berlaku untuk bulan-bulan yang sudah lewat.</div>
+  </div>
 </section>
 
 <div class="divider"></div>
