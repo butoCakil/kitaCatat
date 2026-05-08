@@ -559,8 +559,14 @@ function formatRp(int $amount): string
     <div class="col-12 col-sm-6 col-lg-3">
         <div class="stat-card">
             <div class="stat-icon balance"><i class="fa-solid fa-scale-balanced"></i></div>
-            <div>
-                <div class="stat-label">Saldo</div>
+            <div style="flex:1">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="stat-label">Saldo</div>
+                    <button onclick="openSaldoModal()" title="Sesuaikan Saldo"
+                        style="background:none;border:none;padding:0;cursor:pointer;color:var(--text-muted);font-size:13px;line-height:1">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
                 <div class="stat-value" style="color:<?= $saldo >= 0 ? 'var(--primary)' : 'var(--danger)' ?>">
                     <?= formatRp(abs($saldo)) ?>
                 </div>
@@ -1215,9 +1221,91 @@ function formatRp(int $amount): string
     </div>
 </div>
 
-<?php
-ob_start();
-?>
+<!-- Modal Penyesuaian Saldo -->
+<div class="modal fade" id="saldoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:var(--radius);border:1px solid var(--card-border)">
+            <div class="modal-header border-bottom" style="padding:16px 20px">
+                <h6 class="modal-title fw-bold">⚙️ Sesuaikan Saldo</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:20px">
+
+                <!-- STEP 1: Input -->
+                <div id="saldoStep1">
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:12px;font-weight:600">Mode</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" id="btnModeNow" onclick="setMode('now')"
+                                class="btn btn-sm flex-fill"
+                                style="border:2px solid var(--primary);color:var(--primary);border-radius:8px;font-weight:600">
+                                Bulan Ini
+                            </button>
+                            <button type="button" id="btnModeHistoris" onclick="setMode('historis')"
+                                class="btn btn-sm flex-fill"
+                                style="border:2px solid #e2e8f0;color:var(--text-secondary);border-radius:8px;font-weight:600">
+                                Bulan Lalu / Lainnya
+                            </button>
+                        </div>
+                        <input type="hidden" id="saldoMode" value="now">
+                    </div>
+
+                    <!-- Pilih bulan/tahun (hanya tampil jika mode historis) -->
+                    <div id="saldoHistorisField" style="display:none" class="mb-3">
+                        <label class="form-label" style="font-size:12px;font-weight:600">Bulan & Tahun</label>
+                        <div class="d-flex gap-2">
+                            <select id="saldoBulan" class="form-select form-select-sm">
+                                <?php
+                                $bulanNames = ['Januari','Februari','Maret','April','Mei','Juni',
+                                               'Juli','Agustus','September','Oktober','November','Desember'];
+                                foreach ($bulanNames as $i => $b):
+                                ?>
+                                <option value="<?= $i+1 ?>" <?= ($i+1)==(int)date('n')-1?'selected':'' ?>>
+                                    <?= $b ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="number" id="saldoTahun" class="form-control form-control-sm"
+                                value="<?= date('Y') ?>" min="2020" max="<?= date('Y') ?>" style="width:90px">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:12px;font-weight:600">Saldo Rekening Anda (Rp)</label>
+                        <input type="number" id="saldoRiil" class="form-control" placeholder="Contoh: 5000000" min="0">
+                    </div>
+                </div>
+
+                <!-- STEP 2: Konfirmasi selisih + input deskripsi -->
+                <div id="saldoStep2" style="display:none">
+                    <div id="saldoInfo" style="background:#f8fafc;border-radius:10px;padding:14px;font-size:13px;margin-bottom:16px;line-height:2"></div>
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:12px;font-weight:600">Deskripsi Selisih</label>
+                        <input type="text" id="saldoDeskripsi" class="form-control"
+                            placeholder="Contoh: potongan admin, penyesuaian awal" maxlength="255">
+                    </div>
+                </div>
+
+                <!-- STEP 3: Sukses -->
+                <div id="saldoStep3" style="display:none;text-align:center;padding:10px 0">
+                    <div style="font-size:40px;margin-bottom:8px">✅</div>
+                    <div id="saldoSuccessMsg" style="font-size:14px;font-weight:600"></div>
+                </div>
+
+                <div id="saldoError" class="text-danger" style="font-size:12px;display:none;margin-top:8px"></div>
+            </div>
+            <div class="modal-footer border-top" style="padding:14px 20px">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" id="saldoBtn" class="btn btn-sm btn-primary" onclick="saldoNext()">
+                    Cek Selisih
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php ob_start(); ?>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script
     src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
@@ -1520,6 +1608,166 @@ ob_start();
             arrow.classList.add('fa-chevron-right');
         }
     });
+</script>
+
+<script>
+    // ============================================================
+    // Modal Penyesuaian Saldo
+    // ============================================================
+    var saldoModal = new bootstrap.Modal(document.getElementById('saldoModal'));
+    var saldoStep  = 1;
+    var saldoData  = {};
+
+    function openSaldoModal() {
+        saldoStep = 1;
+        saldoData = {};
+        document.getElementById('saldoStep1').style.display = '';
+        document.getElementById('saldoStep2').style.display = 'none';
+        document.getElementById('saldoStep3').style.display = 'none';
+        document.getElementById('saldoError').style.display = 'none';
+        document.getElementById('saldoRiil').value = '';
+        document.getElementById('saldoDeskripsi').value = '';
+        document.getElementById('saldoBtn').textContent = 'Cek Selisih';
+        setMode('now');
+        saldoModal.show();
+    }
+
+    function setMode(mode) {
+        document.getElementById('saldoMode').value = mode;
+        const isHistoris = mode === 'historis';
+        document.getElementById('saldoHistorisField').style.display = isHistoris ? '' : 'none';
+        document.getElementById('btnModeNow').style.borderColor      = isHistoris ? '#e2e8f0' : 'var(--primary)';
+        document.getElementById('btnModeNow').style.color            = isHistoris ? 'var(--text-secondary)' : 'var(--primary)';
+        document.getElementById('btnModeHistoris').style.borderColor = isHistoris ? 'var(--primary)' : '#e2e8f0';
+        document.getElementById('btnModeHistoris').style.color       = isHistoris ? 'var(--primary)' : 'var(--text-secondary)';
+    }
+
+    function formatRpJs(n) {
+        return 'Rp ' + parseInt(n).toLocaleString('id-ID');
+    }
+
+    async function saldoNext() {
+        const errEl = document.getElementById('saldoError');
+        errEl.style.display = 'none';
+
+        if (saldoStep === 1) {
+            // Kirim ke API untuk hitung selisih
+            const mode  = document.getElementById('saldoMode').value;
+            const riil  = parseInt(document.getElementById('saldoRiil').value);
+            const bulan = parseInt(document.getElementById('saldoBulan').value);
+            const tahun = parseInt(document.getElementById('saldoTahun').value);
+
+            if (!riil || riil <= 0) {
+                errEl.textContent = 'Masukkan nominal saldo yang valid.';
+                errEl.style.display = '';
+                return;
+            }
+
+            document.getElementById('saldoBtn').textContent = 'Memproses...';
+            document.getElementById('saldoBtn').disabled = true;
+
+            try {
+                const res  = await fetch('/api/saldo_adjustment.php', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        csrf_token: '<?= $_SESSION['csrf_token'] ?? '' ?>',
+                        saldo_riil: riil,
+                        mode, bulan, tahun
+                    })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    errEl.textContent = data.message;
+                    errEl.style.display = '';
+                    return;
+                }
+
+                if (data.match) {
+                    // Sudah cocok
+                    document.getElementById('saldoStep1').style.display = 'none';
+                    document.getElementById('saldoStep3').style.display = '';
+                    document.getElementById('saldoSuccessMsg').textContent = data.message;
+                    document.getElementById('saldoBtn').style.display = 'none';
+                    return;
+                }
+
+                // Tampilkan info selisih
+                saldoData = data;
+                const tipeLabel = data.tipe === 'income' ? '📈 Pemasukan' : '📉 Pengeluaran';
+                const coSign    = data.carry_over >= 0 ? '＋' : '−';
+
+                let info = `<strong>Periode:</strong> ${data.label_bulan}<br>`;
+                info += `<strong>Saldo kamu:</strong> ${formatRpJs(data.saldo_riil)}<br>`;
+                info += `<strong>Saldo KitaCatat:</strong> ${formatRpJs(data.saldo_sistem)}<br>`;
+                if (mode === 'historis') {
+                    info += `&nbsp;&nbsp;Bulan ${data.label_bulan}: ${formatRpJs(data.saldo_periode)}<br>`;
+                    info += `&nbsp;&nbsp;${coSign} Saldo sebelumnya: ${formatRpJs(Math.abs(data.carry_over))}<br>`;
+                }
+                info += `<strong>Selisih:</strong> ${tipeLabel} ${formatRpJs(Math.abs(data.selisih))}`;
+
+                document.getElementById('saldoInfo').innerHTML = info;
+                document.getElementById('saldoStep1').style.display = 'none';
+                document.getElementById('saldoStep2').style.display = '';
+                document.getElementById('saldoBtn').textContent = 'Simpan Penyesuaian';
+                saldoStep = 2;
+
+            } catch(e) {
+                errEl.textContent = 'Terjadi kesalahan. Coba lagi.';
+                errEl.style.display = '';
+            } finally {
+                document.getElementById('saldoBtn').disabled = false;
+            }
+
+        } else if (saldoStep === 2) {
+            // Simpan transaksi penyesuaian
+            const desc = document.getElementById('saldoDeskripsi').value.trim();
+            if (!desc) {
+                errEl.textContent = 'Deskripsi tidak boleh kosong.';
+                errEl.style.display = '';
+                return;
+            }
+
+            document.getElementById('saldoBtn').textContent = 'Menyimpan...';
+            document.getElementById('saldoBtn').disabled = true;
+
+            try {
+                const res  = await fetch('/api/saldo_adjustment_save.php', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        csrf_token: '<?= $_SESSION['csrf_token'] ?? '' ?>',
+                        selisih:    saldoData.selisih,
+                        deskripsi:  desc,
+                        trx_date:   saldoData.trx_date,
+                    })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    errEl.textContent = data.message;
+                    errEl.style.display = '';
+                    return;
+                }
+
+                document.getElementById('saldoStep2').style.display = 'none';
+                document.getElementById('saldoStep3').style.display = '';
+                document.getElementById('saldoSuccessMsg').textContent =
+                    'Saldo disesuaikan! [' + data.unique_code + ']';
+                document.getElementById('saldoBtn').style.display = 'none';
+
+                // Reload halaman setelah 1.5 detik agar stat card update
+                setTimeout(() => location.reload(), 1500);
+
+            } catch(e) {
+                errEl.textContent = 'Terjadi kesalahan. Coba lagi.';
+                errEl.style.display = '';
+            } finally {
+                document.getElementById('saldoBtn').disabled = false;
+            }
+        }
+    }
 </script>
 <?php
 $extraScript = ob_get_clean();
