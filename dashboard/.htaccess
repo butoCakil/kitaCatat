@@ -1,0 +1,11 @@
+# ============================================================
+# KitaCatat — dashboard/.htaccess
+# ============================================================
+
+Options -Indexes
+
+# Blokir akses ke folder layout secara langsung
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^layout/ - [F,L]
+</IfModule>

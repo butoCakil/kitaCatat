@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KitaCatat — Catat Keuangan Lewat WhatsApp</title>
+<link rel="icon" type="image/x-icon" href="/assets/img/icon/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green:      #16a34a;
+  --green-light:#dcfce7;
+  --green-dark: #14532d;
+  --ink:        #0a0f0d;
+  --ink-soft:   #374151;
+  --ink-muted:  #6b7280;
+  --surface:    #f9fafb;
+  --card:       #ffffff;
+  --border:     #e5e7eb;
+  --font:       'Sora', sans-serif;
+  --mono:       'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--ink);
+  color: #fff;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   NAV
+============================================================ */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(10,15,13,.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.nav-brand {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--green);
+  text-decoration: none;
+  letter-spacing: -.3px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-link {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all .15s;
+}
+
+.nav-link.ghost {
+  color: #9ca3af;
+  background: transparent;
+}
+.nav-link.ghost:hover { color: #fff; }
+
+.nav-link.solid {
+  background: var(--green);
+  color: #fff;
+}
+.nav-link.solid:hover { background: #15803d; }
+
+/* ============================================================
+   HERO
+============================================================ */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 100px 24px 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background orbs */
+.hero::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(22,163,74,.15) 0%, transparent 70%);
+  top: -100px; left: -200px;
+  animation: float 8s ease-in-out infinite;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(22,163,74,.10) 0%, transparent 70%);
+  bottom: 0; right: -100px;
+  animation: float 10s ease-in-out infinite reverse;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%       { transform: translateY(-30px) scale(1.05); }
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(22,163,74,.12);
+  border: 1px solid rgba(22,163,74,.25);
+  border-radius: 20px;
+  padding: 5px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6ee7b7;
+  margin-bottom: 24px;
+  position: relative;
+  animation: fadeDown .6s ease both;
+}
+
+.hero h1 {
+  font-size: clamp(38px, 7vw, 72px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  max-width: 720px;
+  margin-bottom: 20px;
+  position: relative;
+  animation: fadeDown .6s .1s ease both;
+}
+
+.hero h1 .accent { color: var(--green); }
+
+.hero p {
+  font-size: clamp(15px, 2vw, 18px);
+  color: #9ca3af;
+  max-width: 480px;
+  margin-bottom: 36px;
+  position: relative;
+  animation: fadeDown .6s .2s ease both;
+  font-weight: 300;
+}
+
+.hero-cta-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  position: relative;
+  animation: fadeDown .6s .3s ease both;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--green);
+  color: #fff;
+  padding: 14px 32px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  transition: all .15s;
+  box-shadow: 0 0 0 0 rgba(22,163,74,.4);
+}
+.btn-primary:hover {
+  background: #15803d;
+  box-shadow: 0 0 0 6px rgba(22,163,74,.15);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,.06);
+  color: #d1d5db;
+  padding: 14px 32px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,.1);
+  transition: all .15s;
+}
+.btn-ghost:hover {
+  background: rgba(255,255,255,.10);
+  color: #fff;
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   DEMO CHAT (hero)
+============================================================ */
+.hero-demo {
+  position: relative;
+  margin-top: 56px;
+  width: 100%;
+  max-width: 360px;
+  animation: fadeUp .8s .4s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.phone-frame {
+  background: #1a1a2e;
+  border-radius: 28px;
+  border: 2px solid rgba(255,255,255,.08);
+  overflow: hidden;
+  box-shadow:
+    0 40px 80px rgba(0,0,0,.5),
+    0 0 0 1px rgba(255,255,255,.04) inset;
+}
+
+.phone-header {
+  background: #128c7e;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.phone-avatar {
+  width: 36px; height: 36px;
+  background: var(--green);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.phone-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.phone-status {
+  font-size: 11px;
+  color: rgba(255,255,255,.7);
+}
+
+.phone-body {
+  background: #e5ddd5;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9b99a' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 240px;
+}
+
+.p-bubble-row { display: flex; }
+.p-bubble-row.right { justify-content: flex-end; }
+
+.p-bubble {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  box-shadow: 0 1px 2px rgba(0,0,0,.1);
+  color: #1a1a1a;
+}
+.p-bubble.user { background: #dcf8c6; border-bottom-right-radius: 3px; }
+.p-bubble.bot  { background: #fff; border-bottom-left-radius: 3px; }
+.p-bubble .t   { font-size: 9.5px; color: #86a17d; text-align: right; margin-top: 2px; }
+
+/* ============================================================
+   FEATURES SECTION
+============================================================ */
+.features {
+  background: #0f1410;
+  padding: 80px 24px;
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+
+.features-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.section-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--green);
+  margin-bottom: 10px;
+}
+
+.section-header h2 {
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.section-header p {
+  color: #6b7280;
+  font-size: 15px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.feat-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 14px;
+  padding: 24px;
+  transition: all .2s;
+}
+.feat-card:hover {
+  background: rgba(22,163,74,.06);
+  border-color: rgba(22,163,74,.2);
+  transform: translateY(-3px);
+}
+
+.feat-icon {
+  width: 44px; height: 44px;
+  background: rgba(22,163,74,.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 14px;
+}
+
+.feat-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.feat-card p {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   HOW IT WORKS
+============================================================ */
+.how {
+  padding: 80px 24px;
+  background: var(--ink);
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+
+.how-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.how-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 40px;
+}
+
+.how-step {
+  display: flex;
+  gap: 20px;
+  padding-bottom: 32px;
+  position: relative;
+}
+
+.how-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: 40px;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(22,163,74,.3), transparent);
+}
+
+.how-num {
+  width: 40px; height: 40px;
+  background: rgba(22,163,74,.1);
+  border: 2px solid rgba(22,163,74,.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+.how-step h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+  margin-top: 8px;
+}
+
+.how-step p {
+  font-size: 13.5px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.how-step code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: rgba(22,163,74,.1);
+  color: #6ee7b7;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   CTA BOTTOM
+============================================================ */
+.cta-section {
+  padding: 80px 24px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(22,163,74,.08) 0%, transparent 60%);
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+
+.cta-section h2 {
+  font-size: clamp(24px, 4vw, 40px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 14px;
+}
+
+.cta-section p {
+  color: #6b7280;
+  font-size: 15px;
+  margin-bottom: 32px;
+}
+
+/* ============================================================
+   FOOTER
+============================================================ */
+footer {
+  padding: 28px 24px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  text-align: center;
+}
+
+footer p {
+  font-size: 13px;
+  color: #374151;
+}
+
+footer a {
+  color: #4b5563;
+  text-decoration: none;
+  transition: color .15s;
+}
+footer a:hover { color: var(--green); }
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width: 640px) {
+  .hero h1 { letter-spacing: -1px; }
+  .nav-links .nav-link.ghost { display: none; }
+  .features-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-brand" style="display:flex;align-items:center;gap:8px;">
+    <img src="/assets/img/icon/android-chrome-192x192.png" alt="KitaCatat" style="width:28px;height:28px;border-radius:7px;">
+    KitaCatat
+  </a>
+  <div class="nav-links">
+    <a href="/panduan.html" class="nav-link ghost">Panduan</a>
+    <a href="/login.php" class="nav-link solid">Masuk</a>
+    <a href="/register.php" class="nav-link ghost">Daftar Gratis</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">💬 Berbasis WhatsApp</div>
+  <h1>Catat keuangan<br>semudah <span class="accent">kirim pesan</span></h1>
+  <p>Tidak perlu aplikasi tambahan. Cukup kirim pesan ke bot WhatsApp — transaksi langsung tercatat, rekap otomatis tersedia.</p>
+  <div class="hero-cta-group">
+    <a href="/register.php" class="btn-primary">
+      Mulai Sekarang — Gratis
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+    <a href="/panduan.html" class="btn-ghost">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Lihat Panduan
+    </a>
+  </div>
+
+  <!-- Phone mockup -->
+  <div class="hero-demo">
+    <div class="phone-frame">
+      <div class="phone-header">
+        <div class="phone-avatar" style="background:#f0fdf4;overflow:hidden;">
+            <img src="/assets/img/icon/android-chrome-192x192.png" alt="KitaCatat" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+        </div>
+        <div>
+          <div class="phone-name">KitaCatat Bot</div>
+          <div class="phone-status">online</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="p-bubble-row right">
+          <div class="p-bubble user">Bensin 50rb<div class="t">07.15 ✓✓</div></div>
+        </div>
+        <div class="p-bubble-row">
+          <div class="p-bubble bot">✅ Tercatat!<br>[TXN-20260322-0001]<br>📉 Pengeluaran: <b>Rp50.000</b><br>🏷️ Transportasi<div class="t">07.15</div></div>
+        </div>
+        <div class="p-bubble-row right">
+          <div class="p-bubble user">Income gaji 5jt<div class="t">08.00 ✓✓</div></div>
+        </div>
+        <div class="p-bubble-row">
+          <div class="p-bubble bot">✅ Tercatat!<br>[TXN-20260322-0002]<br>📈 Pemasukan: <b>Rp5.000.000</b><br>🏷️ Gaji<div class="t">08.00</div></div>
+        </div>
+        <div class="p-bubble-row right">
+          <div class="p-bubble user">Rekap bulan ini<div class="t">20.00 ✓✓</div></div>
+        </div>
+        <div class="p-bubble-row">
+          <div class="p-bubble bot">📊 <b>Rekap — Maret 2026</b><br>Pemasukan: Rp5.000.000<br>Pengeluaran: Rp50.000<br>🟢 Saldo: Rp4.950.000<div class="t">20.00</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="features-inner">
+    <div class="section-header">
+      <div class="section-eyebrow">Fitur Unggulan</div>
+      <h2>Semua yang Anda butuhkan</h2>
+      <p>Dirancang untuk penggunaan sehari-hari yang simpel namun lengkap.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon">🧠</div>
+        <h3>Parser Cerdas</h3>
+        <p>Sistem memahami bahasa natural Indonesia. "Bensin 50rb", "Bayar listrik 350rb", "Gaji masuk 5jt" — semua dikenali otomatis.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🏷️</div>
+        <h3>Kategori Otomatis</h3>
+        <p>Transaksi dikategorikan otomatis. Sistem belajar dari kebiasaan Anda — semakin sering digunakan, semakin akurat.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">👨‍👩‍👧</div>
+        <h3>Keuangan Keluarga</h3>
+        <p>Buat grup keluarga, catat bersama, rekap gabungan. Setiap anggota tetap punya catatan pribadi.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚖️</div>
+        <h3>Cek Saldo Cepat</h3>
+        <p>Sebutkan saldo rekening Anda, sistem menghitung selisih dan mencatat penyesuaian otomatis. Cocok untuk gaji dengan potongan otomatis.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📊</div>
+        <h3>Dashboard & Laporan</h3>
+        <p>Grafik tren bulanan, breakdown per kategori, dan laporan lengkap. Export ke CSV untuk analisis di Excel.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">✏️</div>
+        <h3>Edit via WhatsApp</h3>
+        <p>Salah catat? Langsung edit atau hapus via WA dengan kode TXN. Tidak perlu buka dashboard.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="how-inner">
+    <div class="section-header">
+      <div class="section-eyebrow">Cara Kerja</div>
+      <h2>Mulai dalam 3 langkah</h2>
+    </div>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <div>
+          <h3>Daftar & simpan nomor bot</h3>
+          <p>Buat akun di <code>kitacatat.masbendz.com/register</code> dengan nomor WA Anda, lalu simpan nomor bot di kontak HP.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <div>
+          <h3>Kirim pesan pertama</h3>
+          <p>Chat ke nomor bot, contoh: <code>Bensin 50rb</code> atau <code>Income gaji 5jt</code> — transaksi langsung tercatat dan bot membalas konfirmasi.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <div>
+          <h3>Pantau di dashboard</h3>
+          <p>Login ke dashboard untuk lihat grafik, laporan bulanan, dan kelola data keuangan lebih detail.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Mulai catat keuangan<br>hari ini</h2>
+  <p>Gratis, tanpa aplikasi tambahan, langsung dari WhatsApp.</p>
+  <div class="hero-cta-group">
+    <a href="/register.php" class="btn-primary">
+      Daftar Sekarang
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+    <a href="/login.php" class="btn-ghost">Sudah punya akun</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    <a href="/">Beranda</a> &nbsp;·&nbsp;
+    <a href="/panduan.html">Panduan</a> &nbsp;·&nbsp;
+    <a href="/register.php">Daftar</a> &nbsp;·&nbsp;
+    <a href="/login.php">Masuk</a>
+  </p>
+  <p style="margin-top:10px">
+    <a href="/privacy-policy.html">Kebijakan Privasi</a>
+    &nbsp;·&nbsp;
+    <a href="/terms-of-service.html">Syarat &amp; Ketentuan</a>
+  </p>
+  <p style="margin-top:8px;color:#374151">© 2026 KitaCatat &mdash; Bendz Production</p>
+</footer>
+
+</body>
+</html>

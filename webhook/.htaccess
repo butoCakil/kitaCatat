@@ -1,0 +1,13 @@
+# ============================================================
+# KitaCatat — webhook/.htaccess
+# Hanya izinkan POST request (dari Fonnte)
+# Blokir akses GET langsung dari browser
+# ============================================================
+
+Options -Indexes
+
+# Hanya izinkan POST dan OPTIONS
+#<LimitExcept POST OPTIONS>
+#    Order Allow,Deny
+#    Deny from all
+#</LimitExcept>

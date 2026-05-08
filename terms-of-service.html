@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Syarat & Ketentuan — KitaCatat</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #16a34a;
+    --green-dark: #15803d;
+    --green-light: #dcfce7;
+    --ink: #0f172a;
+    --ink-soft: #334155;
+    --ink-muted: #64748b;
+    --border: #e2e8f0;
+    --bg: #f8fafc;
+    --white: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink-soft);
+    line-height: 1.75;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, #0f172a, #1e3a5f);
+    color: white;
+    padding: 56px 24px 48px;
+    text-align: center;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 {
+    font-family: 'Lora', serif;
+    font-size: clamp(26px, 5vw, 38px);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .hero p {
+    font-size: 14px;
+    opacity: 0.7;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .meta-bar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 24px;
+    margin-bottom: 40px;
+    font-size: 13px;
+    color: var(--ink-muted);
+    flex-wrap: wrap;
+  }
+
+  .meta-bar span { display: flex; align-items: center; gap: 6px; }
+  .meta-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; flex-shrink: 0; }
+
+  .section { margin-bottom: 40px; }
+
+  .section-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+
+  .section h2 {
+    font-family: 'Lora', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section p { font-size: 14px; margin-bottom: 10px; color: var(--ink-soft); }
+
+  .section ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+  }
+
+  .section ul li {
+    font-size: 14px;
+    padding: 6px 0 6px 20px;
+    position: relative;
+    color: var(--ink-soft);
+  }
+
+  .section ul li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: #3b82f6;
+    font-weight: 600;
+  }
+
+  .highlight-box {
+    background: #eff6ff;
+    border-left: 3px solid #3b82f6;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13.5px;
+    color: #1e40af;
+  }
+
+  .warn-box {
+    background: #fef2f2;
+    border-left: 3px solid #ef4444;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13.5px;
+    color: #991b1b;
+  }
+
+  .green-box {
+    background: var(--green-light);
+    border-left: 3px solid var(--green);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13.5px;
+    color: #166534;
+  }
+
+  .plan-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 16px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .plan-table th {
+    background: var(--ink);
+    color: white;
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+
+  .plan-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink-soft);
+  }
+
+  .plan-table tr:last-child td { border-bottom: none; }
+  .plan-table tr:nth-child(even) td { background: #f8fafc; }
+
+  .badge-free {
+    background: var(--green-light);
+    color: var(--green-dark);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .badge-premium {
+    background: #fef9c3;
+    color: #854d0e;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .contact-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 16px;
+    font-size: 14px;
+  }
+
+  .contact-card strong { color: var(--ink); }
+
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-muted);
+    padding: 24px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  .footer a { color: var(--green); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    .meta-bar { gap: 12px; }
+    .plan-table { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-badge">Legal Document</div>
+  <h1>Syarat &amp; Ketentuan</h1>
+  <p>KitaCatat &mdash; Dikelola oleh Bendz Production</p>
+</div>
+
+<div class="container">
+
+  <div class="meta-bar">
+    <span><span class="dot"></span> Berlaku sejak: 30 Maret 2026</span>
+    <span>Versi: 1.0</span>
+    <span>Bahasa: Indonesia</span>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">1</span>Penerimaan Syarat</h2>
+    <p>Dengan mendaftar dan menggunakan layanan <strong>KitaCatat</strong> yang dikelola oleh <strong>Bendz Production</strong>, Anda menyatakan telah membaca, memahami, dan menyetujui seluruh syarat dan ketentuan ini.</p>
+    <p>Jika Anda tidak setuju dengan syarat ini, Anda tidak diperkenankan menggunakan layanan KitaCatat.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">2</span>Deskripsi Layanan</h2>
+    <p>KitaCatat adalah aplikasi pencatatan keuangan pribadi berbasis WhatsApp yang memungkinkan pengguna untuk:</p>
+    <ul>
+      <li>Mencatat pemasukan dan pengeluaran via pesan WhatsApp</li>
+      <li>Melihat rekap dan laporan keuangan melalui dashboard web</li>
+      <li>Menerima notifikasi dan ringkasan keuangan berkala</li>
+      <li>Mengelola kategori dan transaksi terjadwal</li>
+    </ul>
+    <div class="highlight-box">
+      KitaCatat adalah alat bantu pencatatan — bukan layanan keuangan, perbankan, atau investasi. Kami tidak menyimpan, memindahkan, atau mengelola uang Anda.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">3</span>Akun Pengguna</h2>
+    <p>Untuk menggunakan KitaCatat, Anda perlu membuat akun dengan ketentuan:</p>
+    <ul>
+      <li>Satu nomor WhatsApp hanya dapat digunakan untuk satu akun</li>
+      <li>Anda bertanggung jawab penuh atas keamanan akun dan password Anda</li>
+      <li>Anda wajib memberikan informasi yang akurat saat registrasi</li>
+      <li>Anda tidak diperbolehkan membagikan akses akun kepada pihak lain</li>
+      <li>Kami berhak menangguhkan akun yang melanggar ketentuan ini</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">4</span>Model Layanan &amp; Biaya</h2>
+    <p>KitaCatat beroperasi dengan model <strong>Freemium</strong>:</p>
+    <table class="plan-table">
+      <thead>
+        <tr>
+          <th>Fitur</th>
+          <th>Gratis</th>
+          <th>Premium</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pencatatan transaksi via WA</td>
+          <td><span class="badge-free">✓ Gratis</span></td>
+          <td><span class="badge-premium">✓ Premium</span></td>
+        </tr>
+        <tr>
+          <td>Dashboard & laporan dasar</td>
+          <td><span class="badge-free">✓ Gratis</span></td>
+          <td><span class="badge-premium">✓ Premium</span></td>
+        </tr>
+        <tr>
+          <td>Fitur lanjutan (akan diumumkan)</td>
+          <td>—</td>
+          <td><span class="badge-premium">✓ Premium</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="green-box">
+      Detail fitur dan harga paket Premium akan diumumkan sebelum diluncurkan. Pengguna akan diberitahu terlebih dahulu sebelum ada perubahan yang berdampak pada akun gratis.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">5</span>Kewajiban Pengguna</h2>
+    <p>Anda setuju untuk <strong>tidak</strong> menggunakan KitaCatat untuk:</p>
+    <ul>
+      <li>Aktivitas ilegal atau melanggar hukum yang berlaku di Indonesia</li>
+      <li>Menyalahgunakan sistem, termasuk upaya peretasan atau manipulasi data</li>
+      <li>Mengirimkan spam atau pesan massal yang tidak sah melalui sistem</li>
+      <li>Membuat akun palsu atau menyamar sebagai orang lain</li>
+      <li>Menggunakan layanan untuk kepentingan komersial tanpa izin tertulis</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">6</span>Ketersediaan Layanan</h2>
+    <p>Kami berupaya menjaga layanan tetap berjalan dengan baik, namun kami tidak menjamin:</p>
+    <ul>
+      <li>Layanan tersedia 100% tanpa gangguan</li>
+      <li>Tidak ada kehilangan data akibat kegagalan teknis</li>
+      <li>Kompatibilitas dengan semua perangkat dan versi WhatsApp</li>
+    </ul>
+    <div class="warn-box">
+      Kami menyarankan Anda tidak mengandalkan KitaCatat sebagai satu-satunya sumber pencatatan keuangan penting Anda.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">7</span>Batasan Tanggung Jawab</h2>
+    <p>Bendz Production tidak bertanggung jawab atas:</p>
+    <ul>
+      <li>Kerugian finansial akibat keputusan berdasarkan data di KitaCatat</li>
+      <li>Kehilangan data akibat force majeure atau kegagalan pihak ketiga</li>
+      <li>Gangguan layanan WhatsApp yang berada di luar kendali kami</li>
+      <li>Akses tidak sah akibat kelalaian pengguna dalam menjaga keamanan akun</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">8</span>Penghentian Layanan</h2>
+    <p>Kami berhak menghentikan atau menangguhkan akun Anda tanpa pemberitahuan sebelumnya jika:</p>
+    <ul>
+      <li>Anda melanggar syarat dan ketentuan ini</li>
+      <li>Terdapat aktivitas mencurigakan atau berpotensi merugikan sistem</li>
+    </ul>
+    <p>Anda dapat menghapus akun kapan saja melalui menu <strong>Pengaturan Akun</strong> di dashboard.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">9</span>Perubahan Syarat</h2>
+    <p>Kami dapat memperbarui Syarat & Ketentuan ini sewaktu-waktu. Perubahan akan diberitahukan melalui pesan WhatsApp atau pengumuman di dalam aplikasi minimal <strong>7 hari</strong> sebelum berlaku.</p>
+    <p>Melanjutkan penggunaan layanan setelah pemberitahuan dianggap sebagai persetujuan atas perubahan tersebut.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">10</span>Hukum yang Berlaku</h2>
+    <p>Syarat & Ketentuan ini tunduk pada hukum yang berlaku di <strong>Republik Indonesia</strong>. Segala sengketa yang timbul akan diselesaikan secara musyawarah terlebih dahulu.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="section-num">11</span>Kontak</h2>
+    <p>Untuk pertanyaan mengenai Syarat & Ketentuan ini, hubungi kami:</p>
+    <div class="contact-card">
+      <strong>Bendz Production</strong><br>
+      Pengelola KitaCatat<br><br>
+      Melalui fitur <strong>Dukungan</strong> di dalam aplikasi KitaCatat,<br>
+      atau melalui halaman dashboard Anda.
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  &copy; 2026 KitaCatat &mdash; Bendz Production &nbsp;·&nbsp;
+  <a href="/privacy-policy.html">Kebijakan Privasi</a> &nbsp;·&nbsp;
+  <a href="/terms-of-service.html">Syarat Layanan</a>
+</div>
+
+</body>
+</html>

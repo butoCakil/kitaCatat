@@ -1,0 +1,57 @@
+# ============================================================
+# KitaCatat — Root .htaccess
+# ============================================================
+
+Options -Indexes
+
+# Custom error pages
+ErrorDocument 404 /404.php
+ErrorDocument 403 /404.php
+
+RewriteEngine On
+
+# Redirect HTTP ke HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Redirect root ke index.php
+RewriteRule ^$ index.php [L]
+
+# Blokir akses langsung ke folder sensitif dari browser
+RewriteRule ^core/      - [F,L]
+RewriteRule ^config/    - [F,L]
+RewriteRule ^logs/      - [F,L]
+RewriteRule ^tools/     - [F,L]
+
+# Blokir akses ke file sensitif
+<FilesMatch "\.(log|sql|sh|env)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Blokir akses ke file .htaccess itu sendiri
+<Files ".htaccess">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Header keamanan
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header unset X-Powered-By
+</IfModule>
+
+# Sembunyikan versi PHP
+<IfModule mod_php.c>
+    php_flag expose_php off
+</IfModule>
+
+# Session cookie keamanan
+<IfModule mod_php.c>
+    php_value session.cookie_httponly 1
+    php_value session.use_strict_mode 1
+    php_value session.cookie_samesite "Lax"
+</IfModule>

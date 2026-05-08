@@ -1,0 +1,22 @@
+# Konfigurasi sensitif (database credentials)
+config/config.php
+
+# Backup database
+backups/
+
+# Log
+logs/
+error_log
+
+# File test
+test_curl.php
+
+# File sistem
+.DS_Store
+Thumbs.db
+
+# Well-known (tidak perlu di repo)
+.well-known/
+
+# File test
+test_curl.php
