@@ -240,7 +240,15 @@ class CommandHandler
                 break;
 
             default:
-                if (!empty($parsed['silent'])) break; // diam untuk link / pesan panjang
+                if (!empty($parsed['silent'])) break;
+                if (!empty($parsed['hint']) && $parsed['hint'] === 'saldo_bulan_ini') {
+                    WASender::send($this->waNumber,
+                        "ℹ️ Untuk menyesuaikan saldo *bulan ini*, gunakan:\n\n" .
+                        "_Saldo sekarang [nominal]_\n\n" .
+                        "Contoh: _Saldo sekarang 2jt_"
+                    );
+                    break;
+                }
                 if ($this->shouldSendUnknownReply()) {
                     WASender::send($this->waNumber,
                         "Pesan tidak dikenali 🤔\n\n" .

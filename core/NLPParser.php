@@ -150,7 +150,12 @@ class NLPParser
             // Validasi: bulan yang dimaksud harus sebelum bulan ini
             $targetDate = new DateTime("{$year}-{$month}-01", new DateTimeZone('Asia/Jakarta'));
             $thisMonth  = new DateTime($now->format('Y-m') . '-01', new DateTimeZone('Asia/Jakarta'));
-            if ($targetDate >= $thisMonth) return ['intent' => self::INTENT_UNKNOWN];
+            if ($targetDate >= $thisMonth) {
+                return [
+                    'intent' => self::INTENT_UNKNOWN,
+                    'hint'   => 'saldo_bulan_ini',
+                ];
+            }
         }
 
         return [
