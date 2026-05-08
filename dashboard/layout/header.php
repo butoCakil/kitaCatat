@@ -378,6 +378,7 @@ function navActive(string $page, string $current): string {
             display: flex;
             align-items: flex-start;
             gap: 16px;
+            height: 100%;
         }
 
         .stat-icon {

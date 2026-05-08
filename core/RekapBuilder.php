@@ -36,7 +36,22 @@ class RekapBuilder
         $placeholders = implode(',', array_fill(0, count($userIds), '?'));
         $where  = "t.user_id IN ($placeholders) AND t.deleted_at IS NULL AND t.created_at BETWEEN ? AND ?";
         $params = [...$userIds, $dateStart, $dateEnd];
-        return $this->runQuery($where, $params);
+        $result = $this->runQuery($where, $params);
+
+        // Tambah carry-over hanya untuk rekap personal user sendiri
+        if ($result !== null && count($userIds) === 1 && (int)$userIds[0] === (int)$this->user['id']) {
+            $stmtCo = $this->db->prepare(
+                "SELECT
+                    SUM(CASE WHEN type='income'  THEN amount ELSE 0 END) -
+                    SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS carry_over
+                FROM transactions
+                WHERE user_id = ? AND deleted_at IS NULL AND created_at < ?"
+            );
+            $stmtCo->execute([$this->user['id'], $dateStart]);
+            $result['carry_over'] = (int)($stmtCo->fetchColumn() ?? 0);
+        }
+
+        return $result;
     }
 
     // ============================================================
@@ -90,6 +105,7 @@ class RekapBuilder
             'total_transactions' => (int)($summary['total_transactions'] ?? 0),
             'top_expense'        => $topExpense,
             'top_income'         => $topIncome,
+            'carry_over'         => null, // diisi oleh build() jika personal
         ];
     }
 

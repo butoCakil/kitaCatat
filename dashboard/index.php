@@ -97,9 +97,22 @@ $stmt = $db->prepare(
 $stmt->execute([$userId, $lastStart, $lastEnd]);
 $lastSummary = $stmt->fetch();
 
-$lastIncome = (int) ($lastSummary['total_income'] ?? 0);
+$lastIncome  = (int) ($lastSummary['total_income']  ?? 0);
 $lastExpense = (int) ($lastSummary['total_expense'] ?? 0);
-$lastSaldo = $lastIncome - $lastExpense;
+
+// Saldo sebelumnya = kumulatif SEMUA transaksi sebelum periode aktif
+$stmtPrev = $db->prepare(
+    "SELECT
+        SUM(CASE WHEN type='income'  THEN amount ELSE 0 END) -
+        SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS saldo_sebelumnya
+     FROM transactions
+     WHERE user_id = ? AND deleted_at IS NULL
+       AND created_at < ?"
+);
+$stmtPrev->execute([$userId, $dateStart]);
+$carryOver = (int) ($stmtPrev->fetchColumn() ?? 0);
+
+$lastSaldo = $lastIncome - $lastExpense; // tetap dipakai untuk %perubahan
 
 // ===============================
 // Perubahan dari bulan lalu
@@ -552,12 +565,12 @@ function formatRp(int $amount): string
                     <?= formatRp(abs($saldo)) ?>
                 </div>
                 <!--<div class="stat-sub"><?= $saldo >= 0 ? 'Surplus' : 'Defisit' ?></div>-->
-                <?php if ($lastIncome > 0 || $lastExpense > 0): ?>
-                    <?php $totalWithLast = $saldo + $lastSaldo; ?>
+                <?php if ($carryOver !== 0): ?>
+                    <?php $totalSaldo = $saldo + $carryOver; ?>
                     <div style="font-size:10px;color:var(--text-muted);margin-top:3px;line-height:1.4">
-                        <?= $lastSaldo >= 0 ? '＋' : '−' ?> <span style="color:<?= $lastSaldo >= 0 ? 'var(--primary)' : 'var(--danger)' ?>"><?= formatRp(abs($lastSaldo)) ?></span>
-                        bln lalu<br>
-                        <span style="color:<?= $totalWithLast >= 0 ? 'var(--primary)' : 'var(--danger)' ?>;font-weight:600"><?= formatRp(abs($totalWithLast)) ?></span> total
+                        <?= $carryOver >= 0 ? '＋' : '−' ?> <span style="color:<?= $carryOver >= 0 ? 'var(--primary)' : 'var(--danger)' ?>"><?= formatRp(abs($carryOver)) ?></span>
+                        sebelumnya<br>
+                        <span style="color:<?= $totalSaldo >= 0 ? 'var(--primary)' : 'var(--danger)' ?>;font-weight:600"><?= formatRp(abs($totalSaldo)) ?></span>
                     </div>
                 <?php endif; ?>
             </div>

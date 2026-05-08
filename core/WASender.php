@@ -2,6 +2,7 @@
 // ============================================================
 // KitaCatat — WASender
 // Kirim pesan WA keluar melalui Fonnte API
+//
 // ============================================================
 
 class WASender
@@ -129,6 +130,16 @@ class WASender
         $msg .= "Pemasukan  : " . self::formatRupiah($rekap['total_income']) . "\n";
         $msg .= "Pengeluaran: " . self::formatRupiah($rekap['total_expense']) . "\n";
         $msg .= "{$saldoIcon} Saldo     : " . self::formatRupiah(abs($saldo)) . ($saldo < 0 ? ' (minus)' : '') . "\n";
+
+        // Tampilkan carry-over + total jika ada
+        if (!empty($rekap['carry_over'])) {
+            $carryOver  = (int)$rekap['carry_over'];
+            $totalSaldo = $saldo + $carryOver;
+            $coIcon     = $carryOver >= 0 ? '＋' : '−';
+            $totalIcon  = $totalSaldo >= 0 ? '🟢' : '🔴';
+            $msg .= "   {$coIcon} " . self::formatRupiah(abs($carryOver)) . " saldo sebelumnya\n";
+            $msg .= "{$totalIcon} Total     : " . self::formatRupiah(abs($totalSaldo)) . ($totalSaldo < 0 ? ' (minus)' : '') . "\n";
+        }
 
         if (!empty($rekap['top_expense'])) {
             $msg .= "\n*Top Pengeluaran:*\n";
