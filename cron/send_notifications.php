@@ -49,7 +49,7 @@ foreach ($users as $user) {
 
         WASender::send($user['wa_number'], $msg);
         $sent++;
-        usleep(300000); // 0.3 detik jeda antar user
+        usleep(300000);
     }
 
     // ============================================================
@@ -136,153 +136,174 @@ $schedules = $db->query(
        )"
 )->fetchAll();
 
+// Kelompokkan jadwal baru per user
+$schedulesByUser = [];
 foreach ($schedules as $sched) {
-    $schedId = (int)$sched['id'];
-    $userId  = (int)$sched['user_id'];
-    $dueDate = $sched['next_run'];
-
-    // Mode auto — langsung catat tanpa tanya
-    if ($sched['mode'] === 'auto' && $sched['amount']) {
-        // Simpan transaksi langsung
-        $code = 'TXN-' . date('Ymd') . '-' . str_pad(
-            $db->query("SELECT COUNT(*)+1 FROM transactions WHERE DATE(created_at)=CURDATE()")->fetchColumn(),
-            4, '0', STR_PAD_LEFT
-        );
-        $db->prepare(
-            "INSERT INTO transactions (unique_code,user_id,type,amount,description,category_id,source,created_at)
-             VALUES (?,?,?,?,?,?,'scheduled',NOW())"
-        )->execute([
-            $code, $userId, $sched['type'], $sched['amount'],
-            $sched['title'], $sched['category_id']
-        ]);
-        $trxId = (int)$db->lastInsertId();
-
-        // Log sebagai confirmed
-        $db->prepare(
-            "INSERT INTO scheduled_logs (scheduled_id,user_id,due_date,status,transaction_id,reminded_count,last_reminded)
-             VALUES (?,?,?,'confirmed',?,1,NOW())"
-        )->execute([$schedId, $userId, $dueDate, $trxId]);
-
-        // Notif ke WA
-        $icon = $sched['type'] === 'income' ? '📈' : '📉';
-        $msg  = "⚡ *Transaksi Rutin Otomatis*
-
-";
-        $msg .= "[{$code}]
-";
-        $msg .= "{$icon} " . ($sched['type']==='income'?'Pemasukan':'Pengeluaran') . ": Rp " . number_format((int)$sched['amount'],0,',','.') . "
-";
-        $msg .= "📝 " . $sched['title'] . "
-";
-        $msg .= "🏷️ " . ($sched['category_name'] ?? 'Lainnya');
-        WASender::send($sched['wa_number'], $msg);
-
-    } else {
-        // Mode confirm atau ask_amount — kirim pengingat, tunggu jawaban
-        $db->prepare(
-            "INSERT INTO scheduled_logs (scheduled_id,user_id,due_date,status,reminded_count,last_reminded,next_remind)
-             VALUES (?,?,?,'pending',1,NOW(),?)"
-        )->execute([$schedId, $userId, $dueDate, date('Y-m-d', strtotime('+' . $sched['reminder_interval'] . ' days'))]);
-
-        $logId = (int)$db->lastInsertId();
-        $icon  = $sched['type'] === 'income' ? '📈' : '📉';
-
-        $msg  = "⏰ *Pengingat: " . $sched['title'] . "*
-
-";
-        if ($sched['mode'] === 'ask_amount' || ($sched['mode'] === 'confirm' && !$sched['amount'])) {
-            $msg .= "{$icon} " . ($sched['type']==='income'?'Pemasukan':'Pengeluaran') . "
-";
-            $msg .= "🏷️ " . ($sched['category_name'] ?? 'Lainnya') . "
-
-";
-            $msg .= "Sudah " . ($sched['type']==='income'?'diterima':'dibayar') . "?
-";
-            $msg .= "Balas dengan nominal jika sudah (contoh: *5jt* atau *350rb*)
-";
-            $msg .= "Atau balas *belum* / *besok* untuk tunda.";
-        } else {
-            $nominal = $sched['amount'] ? "Rp " . number_format((int)$sched['amount'],0,',','.') : "—";
-            $msg .= "{$icon} " . ($sched['type']==='income'?'Pemasukan':'Pengeluaran') . ": {$nominal}
-";
-            $msg .= "🏷️ " . ($sched['category_name'] ?? 'Lainnya') . "
-
-";
-            $msg .= "Sudah " . ($sched['type']==='income'?'diterima':'dibayar') . "?
-";
-            $msg .= "Balas *ya* untuk konfirmasi atau *belum* / *besok* untuk tunda.";
-        }
-
-        WASender::send($sched['wa_number'], $msg);
-    }
-
-    // Hitung next_run berikutnya
-    $freq = $sched['frequency'];
-    if ($freq === 'once') {
-        // Nonaktifkan setelah selesai
-        $db->prepare("UPDATE scheduled_transactions SET is_active=0 WHERE id=?")->execute([$schedId]);
-    } elseif ($freq === 'daily') {
-        $nextRun = date('Y-m-d', strtotime('+1 day'));
-        $db->prepare("UPDATE scheduled_transactions SET next_run=? WHERE id=?")->execute([$nextRun, $schedId]);
-    } elseif ($freq === 'weekly') {
-        $nextRun = date('Y-m-d', strtotime('+7 days'));
-        $db->prepare("UPDATE scheduled_transactions SET next_run=? WHERE id=?")->execute([$nextRun, $schedId]);
-    } elseif ($freq === 'monthly') {
-        $dom     = (int)$sched['day_of_month'];
-        $nextRun = date('Y-m-', strtotime('first day of next month')) . str_pad($dom, 2, '0', STR_PAD_LEFT);
-        $db->prepare("UPDATE scheduled_transactions SET next_run=? WHERE id=?")->execute([$nextRun, $schedId]);
-    } elseif ($freq === 'yearly') {
-        $nextRun = (date('Y') + 1) . '-' . date('m-d', strtotime($dueDate));
-        $db->prepare("UPDATE scheduled_transactions SET next_run=? WHERE id=?")->execute([$nextRun, $schedId]);
-    }
-
-    $sent++;
-    usleep(300000);
+    $schedulesByUser[(int)$sched['user_id']][] = $sched;
 }
 
-// Kirim pengingat ulang untuk pending yang belum dijawab
+foreach ($schedulesByUser as $userId => $userScheds) {
+    foreach ($userScheds as $sched) {
+        $schedId = (int)$sched['id'];
+        $dueDate = $sched['next_run'];
+
+        // Mode auto — langsung catat tanpa tanya
+        if ($sched['mode'] === 'auto' && $sched['amount']) {
+            $code = 'TXN-' . date('Ymd') . '-' . str_pad(
+                $db->query("SELECT COUNT(*)+1 FROM transactions WHERE DATE(created_at)=CURDATE()")->fetchColumn(),
+                4, '0', STR_PAD_LEFT
+            );
+            $db->prepare(
+                "INSERT INTO transactions (unique_code,user_id,type,amount,description,category_id,source,created_at)
+                 VALUES (?,?,?,?,?,?,'scheduled',NOW())"
+            )->execute([
+                $code, $userId, $sched['type'], $sched['amount'],
+                $sched['title'], $sched['category_id']
+            ]);
+            $trxId = (int)$db->lastInsertId();
+
+            $db->prepare(
+                "INSERT INTO scheduled_logs (scheduled_id,user_id,due_date,status,transaction_id,reminded_count,last_reminded)
+                 VALUES (?,?,?,'confirmed',?,1,NOW())"
+            )->execute([$schedId, $userId, $dueDate, $trxId]);
+
+            $icon = $sched['type'] === 'income' ? '📈' : '📉';
+            $msg  = "⚡ *Transaksi Rutin Otomatis*\n";
+            $msg .= "[{$code}]\n";
+            $msg .= "{$icon} " . ($sched['type']==='income'?'Pemasukan':'Pengeluaran') . ": Rp " . number_format((int)$sched['amount'],0,',','.') . "\n";
+            $msg .= "📝 " . $sched['title'] . "\n";
+            $msg .= "🏷️ " . ($sched['category_name'] ?? 'Lainnya');
+            WASender::send($sched['wa_number'], $msg);
+            $sent++;
+            usleep(300000);
+
+        } else {
+            // Mode confirm/ask_amount — insert log pending, kirim nanti bersama
+            $db->prepare(
+                "INSERT INTO scheduled_logs (scheduled_id,user_id,due_date,status,reminded_count,last_reminded,next_remind)
+                 VALUES (?,?,?,'pending',1,NOW(),?)"
+            )->execute([$schedId, $userId, $dueDate, date('Y-m-d', strtotime('+' . $sched['reminder_interval'] . ' days'))]);
+        }
+
+        // Hitung next_run berikutnya
+        $freq = $sched['frequency'];
+        if ($freq === 'once') {
+            $db->prepare("UPDATE scheduled_transactions SET is_active=0 WHERE id=?")->execute([$schedId]);
+        } elseif ($freq === 'daily') {
+            $nextRun = date('Y-m-d', strtotime('+1 day'));
+            $db->prepare("UPDATE scheduled_transactions SET next_run=? WHERE id=?")->execute([$nextRun, $schedId]);
+        } elseif ($freq === 'weekly') {
+            $nextRun = date('Y-m-d', strtotime('+7 days'));
+            $db->prepare("UPDATE scheduled_transactions SET next_run=? WHERE id=?")->execute([$nextRun, $schedId]);
+        } elseif ($freq === 'monthly') {
+            $dom     = (int)$sched['day_of_month'];
+            $nextRun = date('Y-m-', strtotime('first day of next month')) . str_pad($dom, 2, '0', STR_PAD_LEFT);
+            $db->prepare("UPDATE scheduled_transactions SET next_run=? WHERE id=?")->execute([$nextRun, $schedId]);
+        } elseif ($freq === 'yearly') {
+            $nextRun = (date('Y') + 1) . '-' . date('m-d', strtotime($dueDate));
+            $db->prepare("UPDATE scheduled_transactions SET next_run=? WHERE id=?")->execute([$nextRun, $schedId]);
+        }
+    }
+
+    // Ambil semua pending user ini (termasuk yang baru diinsert) ORDER BY id ASC
+    $stmtPending = $db->prepare(
+        "SELECT sl.id, sl.reminded_count, s.title, s.type, s.amount, s.mode,
+                s.category_id, s.reminder_interval, c.name AS category_name
+         FROM scheduled_logs sl
+         JOIN scheduled_transactions s ON s.id = sl.scheduled_id
+         LEFT JOIN categories c ON c.id = s.category_id
+         WHERE sl.user_id = ? AND sl.status = 'pending'
+         ORDER BY sl.id ASC"
+    );
+    $stmtPending->execute([$userId]);
+    $allPending = $stmtPending->fetchAll();
+
+    if (empty($allPending)) continue;
+
+    $total    = count($allPending);
+    $waNumber = $userScheds[0]['wa_number'];
+
+    foreach ($allPending as $idx => $rem) {
+        $no   = $idx + 1;
+        $icon = $rem['type'] === 'income' ? '📈' : '📉';
+
+        $msg  = "⏰ *Pengingat {$no}/{$total}: " . $rem['title'] . "*\n";
+        if ($rem['mode'] === 'ask_amount' || ($rem['mode'] === 'confirm' && !$rem['amount'])) {
+            $msg .= "{$icon} " . ($rem['type']==='income'?'Pemasukan':'Pengeluaran') . "\n";
+            $msg .= "🏷️ " . ($rem['category_name'] ?? 'Lainnya') . "\n\n";
+            $msg .= "Sudah " . ($rem['type']==='income'?'diterima':'dibayar') . "?\n";
+            $msg .= "Balas *{$no} [nominal]* (contoh: *{$no} 50rb*)\n";
+            $msg .= "Atau *{$no} belum* / *{$no} besok* untuk tunda.";
+        } else {
+            $nominal = $rem['amount'] ? "Rp " . number_format((int)$rem['amount'],0,',','.') : "—";
+            $msg .= "{$icon} " . ($rem['type']==='income'?'Pemasukan':'Pengeluaran') . ": {$nominal}\n";
+            $msg .= "🏷️ " . ($rem['category_name'] ?? 'Lainnya') . "\n\n";
+            $msg .= "Sudah " . ($rem['type']==='income'?'diterima':'dibayar') . "?\n";
+            $msg .= "Balas *{$no} ya* untuk konfirmasi atau *{$no} belum* / *{$no} besok* untuk tunda.";
+        }
+
+        WASender::send($waNumber, $msg);
+        $sent++;
+        usleep(300000);
+    }
+}
+
+// ============================================================
+// PENGINGAT ULANG — pending yang belum dijawab, grouped per user
+// ============================================================
 $pendingReminders = $db->query(
-    "SELECT sl.*, s.title, s.type, s.amount, s.mode, s.reminder_max,
-            s.reminder_interval, s.category_id, c.name AS category_name,
-            u.wa_number
+    "SELECT sl.id, sl.user_id, sl.reminded_count, s.title, s.type, s.amount,
+            s.mode, s.reminder_max, s.reminder_interval, s.category_id,
+            c.name AS category_name, u.wa_number
      FROM scheduled_logs sl
      JOIN scheduled_transactions s ON s.id = sl.scheduled_id
      JOIN users u ON u.id = sl.user_id
      LEFT JOIN categories c ON c.id = s.category_id
      WHERE sl.status = 'pending'
        AND sl.next_remind <= '{$today}'
-       AND sl.reminded_count < s.reminder_max"
+       AND sl.reminded_count < s.reminder_max
+     ORDER BY sl.user_id ASC, sl.id ASC"
 )->fetchAll();
 
+// Kelompokkan per user
+$remindersByUser = [];
 foreach ($pendingReminders as $rem) {
-    $icon    = $rem['type'] === 'income' ? '📈' : '📉';
-    $nominal = $rem['amount'] ? "Rp " . number_format((int)$rem['amount'],0,',','.') : "—";
+    $remindersByUser[(int)$rem['user_id']][] = $rem;
+}
 
-    $msg  = "🔔 *Pengingat ke-" . ($rem['reminded_count']+1) . ": " . $rem['title'] . "*
+foreach ($remindersByUser as $userId => $rems) {
+    // Skip user yang sudah dapat pengingat baru di loop atas (sudah include pending lama)
+    if (isset($schedulesByUser[$userId])) continue;
 
-";
-    $msg .= "{$icon} " . ($rem['type']==='income'?'Pemasukan':'Pengeluaran');
-    if ($rem['amount']) $msg .= ": {$nominal}";
-    $msg .= "
+    $total    = count($rems);
+    $waNumber = $rems[0]['wa_number'];
 
-";
-    if ($rem['mode'] === 'ask_amount' || ($rem['mode'] === 'confirm' && !$rem['amount'])) {
-        $msg .= "Balas dengan nominal jika sudah, atau *belum* / *besok* untuk tunda.";
-    } else {
-        $msg .= "Balas *ya* untuk konfirmasi atau *belum* / *besok* untuk tunda.";
+    foreach ($rems as $idx => $rem) {
+        $no   = $idx + 1;
+        $icon = $rem['type'] === 'income' ? '📈' : '📉';
+
+        $msg  = "🔔 *Pengingat {$no}/{$total}: " . $rem['title'] . "*\n";
+        if ($rem['mode'] === 'ask_amount' || ($rem['mode'] === 'confirm' && !$rem['amount'])) {
+            $msg .= "{$icon} " . ($rem['type']==='income'?'Pemasukan':'Pengeluaran') . "\n\n";
+            $msg .= "Balas *{$no} [nominal]* (contoh: *{$no} 50rb*)\n";
+            $msg .= "Atau *{$no} belum* / *{$no} besok* untuk tunda.";
+        } else {
+            $nominal = $rem['amount'] ? "Rp " . number_format((int)$rem['amount'],0,',','.') : "—";
+            $msg .= "{$icon} " . ($rem['type']==='income'?'Pemasukan':'Pengeluaran') . ": {$nominal}\n\n";
+            $msg .= "Balas *{$no} ya* untuk konfirmasi atau *{$no} belum* / *{$no} besok* untuk tunda.";
+        }
+
+        WASender::send($waNumber, $msg);
+
+        $newCount   = $rem['reminded_count'] + 1;
+        $nextRemind = date('Y-m-d', strtotime('+' . $rem['reminder_interval'] . ' days'));
+        $db->prepare(
+            "UPDATE scheduled_logs SET reminded_count=?, last_reminded=NOW(), next_remind=? WHERE id=?"
+        )->execute([$newCount, $nextRemind, $rem['id']]);
+
+        $sent++;
+        usleep(300000);
     }
-
-    WASender::send($rem['wa_number'], $msg);
-
-    $newCount   = $rem['reminded_count'] + 1;
-    $nextRemind = date('Y-m-d', strtotime('+' . $rem['reminder_interval'] . ' days'));
-
-    $db->prepare(
-        "UPDATE scheduled_logs SET reminded_count=?, last_reminded=NOW(), next_remind=? WHERE id=?"
-    )->execute([$newCount, $nextRemind, $rem['id']]);
-
-    $sent++;
-    usleep(300000);
 }
 
 echo "✅ Notifikasi terkirim ke {$sent} user pada " . date('Y-m-d H:i:s') . "\n";

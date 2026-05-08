@@ -32,10 +32,22 @@ class CommandHandler
         // ------------------------------------------------------------
         // STEP 1a-0: Cek apakah ada pending pengingat terjadwal
         // ------------------------------------------------------------
-        $pendingScheduled = $this->getPendingScheduledLog();
-        if ($pendingScheduled) {
-            $this->handleScheduledResponse($pendingScheduled);
-            return;
+        $pendingScheduledLogs = $this->getPendingScheduledLogs();
+        if (!empty($pendingScheduledLogs)) {
+            $raw = trim($this->message);
+            // Deteksi format: angka di awal diikuti spasi dan jawaban, contoh "2 ya" / "1 50rb"
+            if (preg_match('/^(\d+)\s+(.+)$/s', $raw, $m)) {
+                $no  = (int)$m[1];
+                $ans = trim($m[2]);
+                // Ambil log ke-N (1-based), fallback ke log pertama jika out of range
+                $idx = ($no >= 1 && $no <= count($pendingScheduledLogs)) ? $no - 1 : 0;
+                $log = $pendingScheduledLogs[$idx];
+                // Override message dengan jawaban saja (tanpa prefix angka)
+                $this->message = $ans;
+                $this->handleScheduledResponse($log);
+                return;
+            }
+            // Format bebas → lanjut flow normal (catat transaksi, dll)
         }
 
         // ------------------------------------------------------------
@@ -496,21 +508,36 @@ class CommandHandler
     }
 
     // ============================================================
+    // HELPER: Append sisa pending ke pesan balasan
+    // ============================================================
+    private function appendPendingReminder(string &$msg): void
+    {
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) FROM scheduled_logs
+            WHERE user_id = ? AND status = 'pending'"
+        );
+        $stmt->execute([$this->user['id']]);
+        $sisa = (int)$stmt->fetchColumn();
+        if ($sisa > 0) {
+            $msg .= "\n\n📌 Masih ada *{$sisa} pengingat* lain yang menunggu responmu.";
+        }
+    }
+
+    // ============================================================
     // HANDLER: Respons pengingat terjadwal (ya/belum/besok/nominal)
     // ============================================================
-    private function getPendingScheduledLog(): ?array
+    private function getPendingScheduledLogs(): array
     {
         $stmt = $this->db->prepare(
             "SELECT sl.*, s.title, s.type, s.amount AS sched_amount,
                     s.mode, s.category_id, s.frequency, s.reminder_interval
-             FROM scheduled_logs sl
-             JOIN scheduled_transactions s ON s.id = sl.scheduled_id
-             WHERE sl.user_id = ? AND sl.status = 'pending'
-               AND sl.created_at >= NOW() - INTERVAL 24 HOUR
-             ORDER BY sl.created_at DESC LIMIT 1"
+            FROM scheduled_logs sl
+            JOIN scheduled_transactions s ON s.id = sl.scheduled_id
+            WHERE sl.user_id = ? AND sl.status = 'pending'
+            ORDER BY sl.id ASC"
         );
         $stmt->execute([$this->user['id']]);
-        return $stmt->fetch() ?: null;
+        return $stmt->fetchAll();
     }
 
     private function handleScheduledResponse(array $log): void
@@ -532,10 +559,10 @@ class CommandHandler
                 "INSERT INTO scheduled_logs (scheduled_id,user_id,due_date,status,reminded_count,last_reminded,next_remind)
                  VALUES (?,?,?,'pending',0,NOW(),?)"
             )->execute([$log['scheduled_id'], $this->user['id'], $nextRemind, $nextRemind]);
-            WASender::send($this->waNumber,
-                "Oke, pengingat *" . $log['title'] . "* ditunda ke " .
-                date('d M Y', strtotime($nextRemind)) . "."
-            );
+            $replyMsg = "Oke, pengingat *" . $log['title'] . "* ditunda ke " .
+                date('d M Y', strtotime($nextRemind)) . ".";
+            $this->appendPendingReminder($replyMsg);
+            WASender::send($this->waNumber, $replyMsg);
             return;
         }
 
@@ -544,7 +571,9 @@ class CommandHandler
             $this->db->prepare(
                 "UPDATE scheduled_logs SET status='skipped', resolved_at=NOW() WHERE id=?"
             )->execute([$logId]);
-            WASender::send($this->waNumber, "Pengingat *" . $log['title'] . "* dilewati.");
+            $replyMsg = "Pengingat *" . $log['title'] . "* dilewati.";
+            $this->appendPendingReminder($replyMsg);
+            WASender::send($this->waNumber, $replyMsg);
             return;
         }
 
@@ -580,14 +609,16 @@ class CommandHandler
                 $this->db->prepare(
                     "UPDATE scheduled_logs SET status='confirmed', transaction_id=?, resolved_at=NOW() WHERE id=?"
                 )->execute([$trx['id'], $logId]);
-                WASender::send($this->waNumber,
-                    "Tercatat!\n[{$trx['unique_code']}]\n" .
+                $replyMsg = "Tercatat!\n[{$trx['unique_code']}]\n" .
                     "{$icon}: " . WASender::formatRupiah($confirmedAmount) . "\n" .
                     "Catatan: " . $log['title'] . "\n" .
-                    "Kategori: " . ($trx['category_name'] ?? 'Lainnya')
-                );
+                    "Kategori: " . ($trx['category_name'] ?? 'Lainnya');
+                $this->appendPendingReminder($replyMsg);
+                WASender::send($this->waNumber, $replyMsg);
             } else {
-                WASender::send($this->waNumber, "Gagal menyimpan transaksi.");
+                $replyMsg = "Gagal menyimpan transaksi.";
+                $this->appendPendingReminder($replyMsg);
+                WASender::send($this->waNumber, $replyMsg);
             }
             return;
         }
@@ -598,12 +629,17 @@ class CommandHandler
             $this->db->prepare(
                 "UPDATE scheduled_logs SET next_remind=?, reminded_count=reminded_count+1 WHERE id=?"
             )->execute([$nextRemind, $logId]);
-            WASender::send($this->waNumber,
-                "Oke, akan diingatkan lagi " . date('d M Y', strtotime($nextRemind)) . "."
-            );
+            $replyMsg = "Oke, akan diingatkan lagi " . ($nextRemind === date('Y-m-d') ? 'hari ini' : 'besok') . ".";
+            $this->appendPendingReminder($replyMsg);
+            WASender::send($this->waNumber, $replyMsg);
             return;
         }
-        // Tidak cocok — lanjut proses pesan normal (tidak return)
+
+        // Jawaban tidak dikenali
+        $replyMsg = "⚠️ Jawaban tidak dikenali.\n" .
+            "Balas dengan format: *[nomor] [jawaban]*\n" .
+            "Contoh: *1 ya* / *1 belum* / *1 besok* / *1 50rb*";
+        WASender::send($this->waNumber, $replyMsg);
     }
 
     // ============================================================
