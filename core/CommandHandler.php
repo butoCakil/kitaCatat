@@ -30,6 +30,53 @@ class CommandHandler
     public function handle(): void
     {
         // ------------------------------------------------------------
+        // STEP 1a-000: Cek apakah ada pending deskripsi transaksi
+        // ------------------------------------------------------------
+        $pendingDesc = $this->getPendingDesc();
+        if ($pendingDesc) {
+            $msg = trim($this->message);
+            $lower = strtolower($msg);
+
+            if (in_array($lower, ['batal', 'cancel', 'tidak'])) {
+                $this->db->prepare(
+                    "UPDATE pending_shared SET status='cancelled', resolved_at=NOW() WHERE id=?"
+                )->execute([$pendingDesc['id']]);
+                WASender::send($this->waNumber, "❌ Pencatatan dibatalkan.");
+                return;
+            }
+
+            // Gunakan pesan ini sebagai deskripsi
+            $data = json_decode($pendingDesc['target_groups'], true);
+            $this->db->prepare(
+                "UPDATE pending_shared SET status='confirmed', resolved_at=NOW() WHERE id=?"
+            )->execute([$pendingDesc['id']]);
+
+            $manager = new TransactionManager($this->user, $this->db);
+            $categories = $this->getUserCategories();
+            $parsed = NLPParser::parse($msg . ' ' . $data['amount'], $categories, (int)$this->user['id'], $this->db);
+
+            $result = $manager->save([
+                'type'          => $data['type'],
+                'amount'        => $data['amount'],
+                'description'   => $msg,
+                'category_name' => $parsed['category_name'] ?? 'Lainnya',
+            ], $data['raw_message'], $data['group_id'] ?? null);
+
+            if ($result['success']) {
+                $trx = $result['transaction'];
+                $sharedGroups = $data['group_id'] ? [] : $this->getSharedGroups();
+                $replyMsg = WASender::buildTransactionMessage($trx, $sharedGroups);
+                WASender::send($this->waNumber, $replyMsg);
+                if (!empty($sharedGroups)) {
+                    $this->createPendingShared($trx['id'], $trx['unique_code'], $sharedGroups);
+                }
+            } else {
+                WASender::send($this->waNumber, "⚠️ Gagal menyimpan catatan.");
+            }
+            return;
+        }
+
+        // ------------------------------------------------------------
         // STEP 1a-00: Cek apakah ada scheduled log yang menunggu nominal
         // ------------------------------------------------------------
         $awaitingLog = $this->getAwaitingAmountLog();
@@ -123,6 +170,7 @@ class CommandHandler
             return;
         }
 
+        // ------------------------------------------------------------
         // STEP 1b: Cek apakah ada pending saldo check yang menunggu deskripsi
         // ------------------------------------------------------------
         $pendingSaldo = $this->getPendingSaldoCheck();
@@ -306,6 +354,18 @@ class CommandHandler
         }
     }
 
+    private function getPendingDesc(): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT * FROM pending_shared
+            WHERE user_id = ? AND status = 'waiting' 
+            AND target_groups LIKE '{\"awaiting_desc\"%'
+            ORDER BY created_at DESC LIMIT 1"
+        );
+        $stmt->execute([$this->user['id']]);
+        return $stmt->fetch() ?: null;
+    }
+
     // ============================================================
     // HANDLER: Catat Transaksi
     // ============================================================
@@ -315,6 +375,38 @@ class CommandHandler
             WASender::send($this->waNumber,
                 "⚠️ Nominal tidak terbaca. Coba ulangi.\n" .
                 "Contoh: _Bensin 50rb_ atau _Makan siang 25.000_"
+            );
+            return;
+        }
+
+        // Cek apakah deskripsi kosong atau hanya berisi nominal mentah
+        $desc = trim($parsed['description'] ?? '');
+        $isDescEmpty = empty($desc) || $desc === $rawMessage || 
+                    NLPParser::extractAmount($desc) === $parsed['amount'];
+
+        if ($isDescEmpty) {
+            $this->db->prepare(
+                "DELETE FROM pending_shared WHERE user_id = ? AND target_groups LIKE '{\"awaiting_desc\"%'"
+            )->execute([$this->user['id']]);
+
+            $this->db->prepare(
+                "INSERT INTO pending_shared (transaction_id, user_id, target_groups, status)
+                VALUES (0, ?, ?, 'waiting')"
+            )->execute([
+                $this->user['id'],
+                json_encode([
+                    'awaiting_desc' => true,
+                    'amount'        => $parsed['amount'],
+                    'type'          => $parsed['type'],
+                    'raw_message'   => $rawMessage,
+                    'group_id'      => $targetGroupId,
+                ])
+            ]);
+
+            WASender::send($this->waNumber,
+                WASender::formatRupiah($parsed['amount']) . " untuk apa?\n" .
+                "Contoh: _bensin_, _makan siang_, _bayar listrik_\n" .
+                "Atau balas *batal* untuk membatalkan."
             );
             return;
         }
