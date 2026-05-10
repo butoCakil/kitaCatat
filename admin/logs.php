@@ -82,6 +82,7 @@ if ($tab === 'conversation') {
             if (!preg_match('/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \| TO: (\d+) \| STATUS: (\w+) \| [^|]+ \| MSG: (.+)$/', $line, $m)) continue;
             [$_, $ts, $num, $status, $msg] = $m;
             $num = trim($num);
+            $msg = str_replace('\\n', "\n", $msg); // unescape newline
             if (!isset($convUsers[$num])) {
                 $convUsers[$num] = ['name' => $num, 'count' => 0, 'last_ts' => $ts];
             }
@@ -205,6 +206,63 @@ function statusBadge(string $status): string {
 
 function fmtRp(int $amount): string {
     return 'Rp ' . number_format($amount, 0, ',', '.');
+}
+
+function formatWAText(string $text): string {
+    $s = htmlspecialchars($text);
+
+    $lines = explode("\n", $s);
+    $out   = [];
+    foreach ($lines as $line) {
+        // Block quote
+        if (preg_match('/^&gt;\s(.*)/', $line, $m)) {
+            $out[] = '<blockquote style="border-left:3px solid #94a3b8;margin:2px 0;padding:0 8px;color:#64748b">' . $m[1] . '</blockquote>';
+            continue;
+        }
+        // Bulleted list
+        if (preg_match('/^\*\s+(.+)/', $line, $m) || preg_match('/^-\s+(.+)/', $line, $m)) {
+            $out[] = '<div style="display:flex;gap:6px;margin:1px 0"><span>•</span><span>' . end($m) . '</span></div>';
+            continue;
+        }
+        // Numbered list
+        if (preg_match('/^(\d+)\.\s+(.+)/', $line, $m)) {
+            $out[] = '<div style="display:flex;gap:6px;margin:1px 0"><span>' . $m[1] . '.</span><span>' . $m[2] . '</span></div>';
+            continue;
+        }
+        $out[] = $line;
+    }
+    $parts = [];
+    foreach ($out as $line) {
+        $isBlock = str_starts_with($line, '<div') || str_starts_with($line, '<blockquote');
+        $prev    = end($parts);
+        $prevIsBlock = $prev && (str_starts_with($prev, '<div') || str_starts_with($prev, '<blockquote'));
+        
+        if ($isBlock || $prevIsBlock) {
+            $parts[] = $line; // tanpa <br>
+        } else {
+            $parts[] = $line;
+        }
+    }
+    $s = '';
+    for ($i = 0; $i < count($parts); $i++) {
+        $isBlock = str_starts_with($parts[$i], '<div') || str_starts_with($parts[$i], '<blockquote');
+        $nextIsBlock = isset($parts[$i+1]) && (str_starts_with($parts[$i+1], '<div') || str_starts_with($parts[$i+1], '<blockquote'));
+        $s .= $parts[$i];
+        if ($i < count($parts) - 1 && !$isBlock && !$nextIsBlock) {
+            $s .= '<br>';
+        }
+    }
+
+    // Monospace
+    $s = preg_replace('/```([^`]+)```/', '<code style="font-family:monospace;background:rgba(0,0,0,.08);padding:1px 4px;border-radius:3px;font-size:11.5px">$1</code>', $s);
+    // Bold
+    $s = preg_replace('/\*([^\*\n]+)\*/', '<strong>$1</strong>', $s);
+    // Italic
+    $s = preg_replace('/_([^_\n]+)_/', '<em>$1</em>', $s);
+    // Strikethrough
+    $s = preg_replace('/~([^~\n]+)~/', '<del>$1</del>', $s);
+
+    return $s;
 }
 
 function urlWithLimit(int $limit, string $tab, string $subtab = ''): string {
@@ -549,7 +607,9 @@ if ($convFilter !== '' && isset($convMessages[$convFilter])) {
                         word-break:break-word;
                         color:#1e293b;
                         box-shadow:0 1px 2px rgba(0,0,0,.06)
-                    "><?= nl2br(htmlspecialchars($m['msg'])) ?></div>
+                    ">
+                        <?= formatWAText($m['msg']) ?>
+                    </div>
                     <div style="font-size:10px;color:#94a3b8;margin-top:2px;text-align:<?= $isIn ? 'left' : 'right' ?>;padding:0 2px">
                         <?= $msgTime ?>
                         <?php if (!$isIn): ?>

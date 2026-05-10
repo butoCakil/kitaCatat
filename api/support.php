@@ -103,6 +103,26 @@ if ($method === 'GET' && $action === 'unread_count') {
 }
 
 // ============================================================
+// GET — Cek status sesi support aktif (admin only)
+// ============================================================
+if ($method === 'GET' && $action === 'session_status') {
+    if (!$isAdmin) exit(json_encode(['success'=>false,'message'=>'Unauthorized']));
+
+    $targetUserId = (int)($_GET['user_id'] ?? 0);
+    if (!$targetUserId) exit(json_encode(['success'=>false,'active'=>false]));
+
+    $stmt = $db->prepare(
+        "SELECT id FROM pending_shared
+         WHERE user_id=? AND status='waiting' AND target_groups='__support_session__'
+         LIMIT 1"
+    );
+    $stmt->execute([$targetUserId]);
+    $active = (bool)$stmt->fetch();
+
+    exit(json_encode(['success' => true, 'active' => $active]));
+}
+
+// ============================================================
 // POST — Kirim pesan
 // ============================================================
 if ($method === 'POST' && ($action === 'send' || isset($body['message']))) {
@@ -157,6 +177,35 @@ if ($method === 'POST' && ($action === 'send' || isset($body['message']))) {
             'wa_sent'    => $waResult['success'],
         ]));
     }
+}
+
+// ============================================================
+// POST — Admin tutup sesi support user
+// ============================================================
+if ($method === 'POST' && $action === 'close_session') {
+    if (!$isAdmin) exit(json_encode(['success'=>false,'message'=>'Unauthorized']));
+
+    $targetUserId = (int)($body['user_id'] ?? 0);
+    if (!$targetUserId) exit(json_encode(['success'=>false,'message'=>'User tidak valid.']));
+
+    $db->prepare(
+        "UPDATE pending_shared SET status='confirmed', resolved_at=NOW()
+         WHERE user_id=? AND status='waiting' AND target_groups='__support_session__'"
+    )->execute([$targetUserId]);
+
+    // Kirim notif WA ke user
+    require_once __DIR__ . '/../core/WASender.php';
+    $stmtUser = $db->prepare("SELECT wa_number FROM users WHERE id=?");
+    $stmtUser->execute([$targetUserId]);
+    $userRow = $stmtUser->fetch();
+    if ($userRow) {
+        WASender::send($userRow['wa_number'],
+            "🔒 Sesi chat dengan admin telah ditutup oleh admin.\n" .
+            "Kamu bisa mulai mencatat transaksi seperti biasa."
+        );
+    }
+
+    exit(json_encode(['success' => true]));
 }
 
 http_response_code(405);

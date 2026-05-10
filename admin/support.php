@@ -54,9 +54,14 @@ require_once __DIR__ . '/layout/header.php';
                     <div id="chatName" style="font-size:14px;font-weight:700">—</div>
                     <div id="chatWA" style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">—</div>
                 </div>
-                <a id="chatWALink" href="#" target="_blank" class="ms-auto btn btn-sm btn-outline-success" style="font-size:11px;display:none">
-                    <i class="fa-brands fa-whatsapp me-1"></i>Buka WA
-                </a>
+                <div class="ms-auto d-flex gap-2">
+                    <a id="chatWALink" href="#" target="_blank" class="btn btn-sm btn-outline-success" style="font-size:11px;display:none">
+                        <i class="fa-brands fa-whatsapp me-1"></i>Buka WA
+                    </a>
+                    <button id="closeSessionBtn" onclick="closeSession()" class="btn btn-sm btn-outline-danger" style="font-size:11px;display:none" title="Tutup sesi chat WA user">
+                        <i class="fa-solid fa-lock me-1"></i>Tutup Sesi
+                    </button>
+                </div>
             </div>
 
             <!-- Messages -->
@@ -203,9 +208,13 @@ async function openChat(userId, name, wa) {
     document.getElementById('messagesArea').innerHTML   = '';
 
     // Link WA
+    // Link WA
     const waLink = document.getElementById('chatWALink');
     waLink.href  = 'https://wa.me/' + wa;
     waLink.style.display = '';
+
+    // Cek status sesi support aktif
+    checkSessionStatus(userId);
 
     // Load pesan
     if (polling) clearInterval(polling);
@@ -270,8 +279,8 @@ function renderMessage(msg) {
                 font-size:13.5px;line-height:1.55;
                 border:${isUser ? '1px solid var(--card-border)' : 'none'};
                 box-shadow:0 1px 4px rgba(0,0,0,.06);
-                white-space:pre-wrap;word-break:break-word">
-                ${escHtml(msg.message)}
+                word-break:break-word">
+                ${formatWA(msg.message)}
             </div>
         </div>`;
     area.appendChild(div);
@@ -295,15 +304,6 @@ async function sendReply() {
     btn.disabled = true;
     input.value  = '';
 
-    // Optimistic render
-    renderMessage({
-        id: Date.now(),
-        sender: 'admin',
-        message,
-        created_at: new Date().toISOString()
-    });
-    scrollToBottom();
-
     try {
         const res  = await fetch('/api/support.php', {
             method: 'POST',
@@ -311,7 +311,10 @@ async function sendReply() {
             body: JSON.stringify({ action: 'send', user_id: currentUserId, message })
         });
         const data = await res.json();
-        if (data.success) lastId = Math.max(lastId, data.id);
+        if (data.success) {
+            // Langsung load pesan terbaru tanpa optimistic render
+            await loadMessages(false);
+        }
     } catch(e) {
         console.error('Gagal kirim:', e);
     }
@@ -345,6 +348,115 @@ function showChatPanel() {
         document.getElementById('inboxPanel').classList.add('mobile-hidden');
         document.getElementById('chatPanel').classList.add('mobile-open');
     }
+}
+
+// ============================================================
+// Cek status sesi support & tombol Tutup Sesi
+// ============================================================
+async function checkSessionStatus(userId) {
+    const btn = document.getElementById('closeSessionBtn');
+    btn.style.display = 'none';
+    try {
+        const res  = await fetch(`/api/support.php?action=session_status&user_id=${userId}`);
+        const data = await res.json();
+        if (data.success && data.active) {
+            btn.style.display = '';
+        }
+    } catch(e) {}
+}
+
+async function closeSession() {
+    if (!currentUserId) return;
+    if (!confirm('Tutup sesi chat WA dengan user ini? User akan dinotifikasi via WhatsApp.')) return;
+
+    const btn = document.getElementById('closeSessionBtn');
+    btn.disabled = true;
+
+    try {
+        const res  = await fetch('/api/support.php', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ action: 'close_session', user_id: currentUserId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            btn.style.display = 'none';
+            alert('Sesi ditutup. User sudah dinotifikasi via WhatsApp.');
+        } else {
+            alert('Gagal menutup sesi: ' + (data.message || 'Unknown error'));
+        }
+    } catch(e) {
+        alert('Gagal menutup sesi.');
+    }
+
+    btn.disabled = false;
+}
+
+function formatWA(text) {
+    if (!text) return '';
+    // Escape HTML dulu
+    let s = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    // Multiline: \n → <br>
+    s = s.replace(/\n/g, '\n'); // tetap, diproses per baris
+
+    const lines = s.split('\n');
+    const out = [];
+    let inList = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+
+        // Block quote: > teks
+        if (/^&gt;\s(.*)/.test(line)) {
+            line = line.replace(/^&gt;\s(.*)/, '<blockquote style="border-left:3px solid #94a3b8;margin:2px 0;padding:0 8px;color:#64748b">$1</blockquote>');
+            out.push(line);
+            continue;
+        }
+
+        // Bulleted list: * item atau - item (di awal baris, bukan bold)
+        if (/^\*\s+(.+)/.test(line) || /^-\s+(.+)/.test(line)) {
+            const content = line.replace(/^[\*\-]\s+/, '');
+            out.push('<div style="display:flex;gap:6px;margin:1px 0"><span>•</span><span>' + content + '</span></div>');
+            continue;
+        }
+
+        // Numbered list: 1. item
+        if (/^\d+\.\s+(.+)/.test(line)) {
+            const match = line.match(/^(\d+)\.\s+(.+)/);
+            out.push('<div style="display:flex;gap:6px;margin:1px 0"><span>' + match[1] + '.</span><span>' + match[2] + '</span></div>');
+            continue;
+        }
+
+        out.push(line);
+    }
+
+    s = '';
+    for (let i = 0; i < out.length; i++) {
+        const isBlock = out[i].startsWith('<div') || out[i].startsWith('<blockquote');
+        const nextIsBlock = i + 1 < out.length && (out[i+1].startsWith('<div') || out[i+1].startsWith('<blockquote'));
+        s += out[i];
+        if (i < out.length - 1 && !isBlock && !nextIsBlock) {
+            s += '<br>';
+        }
+    }
+
+    // Monospace: ```teks```
+    s = s.replace(/```([^`]+)```/g, '<code style="font-family:monospace;background:rgba(0,0,0,.08);padding:1px 4px;border-radius:3px;font-size:11.5px">$1</code>');
+
+    // Bold: *teks* (bukan list — sudah dihandle di atas)
+    s = s.replace(/\*([^\*\n]+)\*/g, '<strong>$1</strong>');
+
+    // Italic: _teks_
+    s = s.replace(/_([^_\n]+)_/g, '<em>$1</em>');
+
+    // Strikethrough: ~teks~
+    s = s.replace(/~([^~\n]+)~/g, '<del>$1</del>');
+
+    return s;
 }
 
 // ============================================================

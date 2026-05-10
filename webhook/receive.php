@@ -85,7 +85,26 @@ $hasAngka = preg_match('/\d/', $strippedEmoji);
 $konfirmasiWords = ['ya', 'yes', 'ok', 'iya', 'y', 'tidak', 'no', 'batal', 'n'];
 $isKonfirmasi = in_array(strtolower(trim($strippedEmoji)), $konfirmasiWords);
 
-if (!$isKonfirmasi && (empty($strippedEmoji) || (!$hasAngka && mb_strlen($strippedEmoji) <= 3))) {
+// Cek apakah user sedang dalam sesi support aktif
+// Jika iya, bypass filter pendek — pesan apapun harus diteruskan
+$isInSupportSession = false;
+if (!$isKonfirmasi && (!$hasAngka && mb_strlen($strippedEmoji) <= 3)) {
+    $dbCheck = getDB();
+    $stmtUser = $dbCheck->prepare("SELECT id FROM users WHERE wa_number = ? AND is_active = 1 LIMIT 1");
+    $stmtUser->execute([$waNumber]);
+    $userCheck = $stmtUser->fetch();
+    if ($userCheck) {
+        $stmtSess = $dbCheck->prepare(
+            "SELECT id FROM pending_shared
+             WHERE user_id = ? AND status = 'waiting' AND target_groups = '__support_session__'
+             LIMIT 1"
+        );
+        $stmtSess->execute([$userCheck['id']]);
+        $isInSupportSession = (bool)$stmtSess->fetch();
+    }
+}
+
+if (!$isKonfirmasi && !$isInSupportSession && (empty($strippedEmoji) || (!$hasAngka && mb_strlen($strippedEmoji) <= 3))) {
     http_response_code(200);
     exit(json_encode(['status' => true, 'message' => 'Emoji-only or emoji without number ignored']));
 }

@@ -77,7 +77,9 @@ class WASender
         if (!is_dir($logDir)) mkdir($logDir, 0755, true);
 
         $status   = $success ? 'OK' : 'FAIL';
-        $preview  = mb_substr(str_replace(["\n", "\r"], ' ', $message), 0, 80);
+        // $preview  = mb_substr(str_replace(["\n", "\r"], ' ', $message), 0, 80);
+        $preview  = mb_substr(str_replace(["\r"], '', $message), 0, 500);
+        $preview  = str_replace("\n", '\\n', $preview);
         $logLine  = date('Y-m-d H:i:s') . " | TO: $target | STATUS: $status";
         if ($detail) $logLine .= " | $detail";
         $logLine .= " | MSG: $preview" . PHP_EOL;

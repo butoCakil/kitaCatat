@@ -29,6 +29,12 @@ class CommandHandler
 
     public function handle(): void
     {
+        // STEP 0: Cek apakah ada sesi support aktif
+        $supportSession = $this->getActiveSupportSession();
+        if ($supportSession) {
+            $this->handleSupportSessionMessage();
+            return;
+        }
         // ------------------------------------------------------------
         // STEP 1a-000: Cek apakah ada pending deskripsi transaksi
         // ------------------------------------------------------------
@@ -1080,17 +1086,23 @@ class CommandHandler
             );
             $stmt->execute([$this->user['id'], $message]);
 
+            // Buka sesi support aktif
+            $this->db->prepare(
+                "DELETE FROM pending_shared
+                WHERE user_id = ? AND target_groups = '__support_session__'"
+            )->execute([$this->user['id']]);
+
+            $this->db->prepare(
+                "INSERT INTO pending_shared (transaction_id, user_id, target_groups, status)
+                VALUES (0, ?, '__support_session__', 'waiting')"
+            )->execute([$this->user['id']]);
+
             WASender::send($this->waNumber,
-                "✅ Pesan terkirim ke admin!
-
-" .
-                "📝 " . $message . "
-
-" .
-                "Admin akan membalas ke WhatsApp ini. " .
-                "Anda juga bisa memantau balasan di:
-" .
-                APP_URL . "/dashboard/support.php"
+                "✅ Pesan terkirim ke admin!\n\n" .
+                "📝 " . $message . "\n\n" .
+                "Sesi chat dengan admin kini *aktif*. Lanjutkan ketik pesan berikutnya langsung.\n" .
+                "Ketik *selesai* untuk mengakhiri sesi.\n\n" .
+                "Pantau balasan di: " . APP_URL . "/dashboard/support.php"
             );
         } catch (\PDOException $e) {
             error_log('[Support] DB error: ' . $e->getMessage());
@@ -1330,5 +1342,67 @@ class CommandHandler
     
         file_put_contents($cacheFile, time());
         return true;
+    }
+
+    // ============================================================
+    // HELPER: Cek apakah ada sesi support aktif
+    // ============================================================
+    private function getActiveSupportSession(): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT * FROM pending_shared
+            WHERE user_id = ? AND status = 'waiting'
+            AND target_groups = '__support_session__'
+            ORDER BY created_at DESC LIMIT 1"
+        );
+        $stmt->execute([$this->user['id']]);
+        return $stmt->fetch() ?: null;
+    }
+
+    // ============================================================
+    // HANDLER: Pesan dalam sesi support aktif
+    // ============================================================
+    private function handleSupportSessionMessage(): void
+    {
+        $msg   = trim($this->message);
+        $lower = strtolower($msg);
+
+        // Perintah tutup sesi oleh user
+        if (in_array($lower, ['selesai', 'stop', 'tutup', 'exit', 'keluar', 'end'])) {
+            $this->closeSupportSession();
+            WASender::send($this->waNumber,
+                "✅ Sesi chat dengan admin telah ditutup.\n" .
+                "Kamu bisa mulai mencatat transaksi atau gunakan perintah lain seperti biasa."
+            );
+            return;
+        }
+
+        // Forward pesan ke admin via support_messages
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO support_messages (user_id, sender, message) VALUES (?, 'user', ?)"
+            );
+            $stmt->execute([$this->user['id'], $msg]);
+
+            WASender::send($this->waNumber,
+                "📨 Pesan terkirim ke admin.\n" .
+                "_(Ketik *selesai* untuk mengakhiri sesi chat)_"
+            );
+        } catch (\PDOException $e) {
+            error_log('[Support Session] DB error: ' . $e->getMessage());
+            WASender::send($this->waNumber, "⚠️ Gagal mengirim pesan. Coba lagi.");
+        }
+    }
+
+    // ============================================================
+    // HELPER: Tutup sesi support (dari user atau via API admin)
+    // ============================================================
+    private function closeSupportSession(): void
+    {
+        $this->db->prepare(
+            "UPDATE pending_shared SET status = 'confirmed', resolved_at = NOW()
+            WHERE user_id = ? AND status = 'waiting'
+            AND target_groups = '__support_session__'"
+        )->execute([$this->user['id']]);
     }
 }
