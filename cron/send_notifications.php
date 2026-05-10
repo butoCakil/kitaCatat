@@ -220,6 +220,13 @@ foreach ($schedulesByUser as $userId => $userScheds) {
 
     if (empty($allPending)) continue;
 
+    // Kunci display_order di DB sesuai urutan kirim
+    foreach ($allPending as $idx => $rem) {
+        $db->prepare(
+            "UPDATE scheduled_logs SET display_order = ? WHERE id = ?"
+        )->execute([$idx + 1, $rem['id']]);
+    }
+
     $total    = count($allPending);
     $waNumber = $userScheds[0]['wa_number'];
 
@@ -277,6 +284,13 @@ foreach ($remindersByUser as $userId => $rems) {
 
     $total    = count($rems);
     $waNumber = $rems[0]['wa_number'];
+
+    // Kunci display_order di DB sesuai urutan kirim
+    foreach ($rems as $idx => $rem) {
+        $db->prepare(
+            "UPDATE scheduled_logs SET display_order = ? WHERE id = ?"
+        )->execute([$idx + 1, $rem['id']]);
+    }
 
     foreach ($rems as $idx => $rem) {
         $no   = $idx + 1;

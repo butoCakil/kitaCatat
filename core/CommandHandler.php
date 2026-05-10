@@ -30,6 +30,42 @@ class CommandHandler
     public function handle(): void
     {
         // ------------------------------------------------------------
+        // STEP 1a-00: Cek apakah ada scheduled log yang menunggu nominal
+        // ------------------------------------------------------------
+        $awaitingLog = $this->getAwaitingAmountLog();
+        if ($awaitingLog) {
+            $amount = NLPParser::extractAmountFromText($this->message);
+            $msg    = strtolower(trim($this->message));
+
+            if (in_array($msg, ['batal', 'cancel', 'tidak'])) {
+                // Batalkan, kembalikan ke pending biasa
+                $this->db->prepare(
+                    "UPDATE scheduled_logs SET awaiting_amount = 0 WHERE id = ?"
+                )->execute([$awaitingLog['id']]);
+                WASender::send($this->waNumber, "❌ Input nominal dibatalkan. Pengingat *" . $awaitingLog['title'] . "* tetap pending.");
+                return;
+            }
+
+            if ($amount > 0) {
+                // Proses nominal
+                $this->db->prepare(
+                    "UPDATE scheduled_logs SET awaiting_amount = 0 WHERE id = ?"
+                )->execute([$awaitingLog['id']]);
+                $this->message = $this->message; // tetap asli
+                $this->handleScheduledResponse($awaitingLog, $amount);
+                return;
+            }
+
+            // Input tidak dikenali sebagai nominal
+            WASender::send($this->waNumber,
+                "⚠️ Nominal tidak terbaca untuk *" . $awaitingLog['title'] . "*.\n" .
+                "Contoh: _50rb_ atau _350.000_\n" .
+                "Atau balas *batal* untuk membatalkan."
+            );
+            return;
+        }
+
+        // ------------------------------------------------------------
         // STEP 1a-0: Cek apakah ada pending pengingat terjadwal
         // ------------------------------------------------------------
         $pendingScheduledLogs = $this->getPendingScheduledLogs();
@@ -40,8 +76,18 @@ class CommandHandler
                 $no  = (int)$m[1];
                 $ans = trim($m[2]);
                 // Ambil log ke-N (1-based), fallback ke log pertama jika out of range
-                $idx = ($no >= 1 && $no <= count($pendingScheduledLogs)) ? $no - 1 : 0;
-                $log = $pendingScheduledLogs[$idx];
+                // Cari log berdasarkan display_order yang dikunci saat kirim
+                $log = null;
+                foreach ($pendingScheduledLogs as $l) {
+                    if ((int)$l['display_order'] === $no) {
+                        $log = $l;
+                        break;
+                    }
+                }
+                // Fallback ke log pertama jika nomor tidak ditemukan
+                if ($log === null) {
+                    $log = $pendingScheduledLogs[0];
+                }
                 // Override message dengan jawaban saja (tanpa prefix angka)
                 $this->message = $ans;
                 $this->handleScheduledResponse($log);
@@ -537,6 +583,20 @@ class CommandHandler
         }
     }
 
+    private function getAwaitingAmountLog(): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT sl.*, s.title, s.type, s.amount AS sched_amount,
+                    s.mode, s.category_id, s.frequency, s.reminder_interval
+            FROM scheduled_logs sl
+            JOIN scheduled_transactions s ON s.id = sl.scheduled_id
+            WHERE sl.user_id = ? AND sl.awaiting_amount = 1
+            ORDER BY sl.id ASC LIMIT 1"
+        );
+        $stmt->execute([$this->user['id']]);
+        return $stmt->fetch() ?: null;
+    }
+
     // ============================================================
     // HANDLER: Respons pengingat terjadwal (ya/belum/besok/nominal)
     // ============================================================
@@ -554,13 +614,13 @@ class CommandHandler
         return $stmt->fetchAll();
     }
 
-    private function handleScheduledResponse(array $log): void
+    private function handleScheduledResponse(array $log, int $forcedAmount = 0): void
     {
         $msg   = strtolower(trim($this->message));
         $logId = (int)$log['id'];
 
         // Cek apakah pesan adalah nominal (angka)
-        $amount = NLPParser::extractAmountFromText($this->message);
+        $amount = $forcedAmount > 0 ? $forcedAmount : NLPParser::extractAmountFromText($this->message);
 
         // Snooze: besok / lusa / tunda
         if (in_array($msg, ['besok', 'tunda', 'lusa', 'nanti'])) {
@@ -597,10 +657,14 @@ class CommandHandler
             $confirmedAmount = $amount;
         } elseif (in_array($msg, ['ya', 'yes', 'sudah', 'iya', 'ok'])) {
             if ($log['mode'] === 'ask_amount' || ($log['mode'] === 'confirm' && !$log['sched_amount'])) {
-                // Mode ask_amount: "ya" tidak valid, minta nominal
+                // Mode ask_amount: "ya" tidak valid, minta nominal, set awaiting
+                $this->db->prepare(
+                    "UPDATE scheduled_logs SET awaiting_amount = 1 WHERE id = ?"
+                )->execute([$logId]);
                 WASender::send($this->waNumber,
                     "Berapa nominalnya untuk *" . $log['title'] . "*?\n" .
-                    "Contoh: _53.280_ atau _53rb_"
+                    "Contoh: _53.280_ atau _53rb_\n" .
+                    "Atau balas *batal* untuk membatalkan."
                 );
                 return;
             } elseif ($log['sched_amount']) {
