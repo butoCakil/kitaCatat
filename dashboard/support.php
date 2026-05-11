@@ -36,9 +36,16 @@ $userName = $user->fetchColumn() ?: 'User';
                         Aktif
                     </div>
                 </div>
-                <div class="ms-auto" style="font-size:12px;color:var(--text-muted)">
-                    <i class="fa-solid fa-info-circle me-1"></i>
-                    Balasan akan dikirim ke WA Anda
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <span style="font-size:12px;color:var(--text-muted)">
+                        <i class="fa-solid fa-info-circle me-1"></i>
+                        Balasan akan dikirim ke WA Anda
+                    </span>
+                    <button id="endSessionBtn" onclick="endSession()"
+                        class="btn btn-sm btn-outline-danger"
+                        style="font-size:11px">
+                        <i class="fa-solid fa-lock me-1"></i>Akhiri Sesi
+                    </button>
                 </div>
             </div>
 
@@ -202,6 +209,44 @@ function handleKeyDown(e) {
 
 function escHtml(str) {
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ============================================================
+// Cek status sesi aktif & tampilkan/sembunyikan tombol
+// ============================================================
+function showSessionEndedNotice() {
+    const area = document.getElementById('messagesArea');
+    const div  = document.createElement('div');
+    div.style.cssText = 'text-align:center;margin:8px 0';
+    div.innerHTML = `<span style="background:#f1f5f9;color:#64748b;font-size:11.5px;padding:4px 14px;border-radius:10px;display:inline-block">
+        🔒 Sesi chat telah diakhiri
+    </span>`;
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+}
+
+async function endSession() {
+    try {
+        const res  = await fetch('/api/support.php?action=session_status_user');
+        const data = await res.json();
+
+        if (!data.active) {
+            alert('ℹ️ Tidak ada sesi chat yang sedang aktif.');
+            return;
+        }
+
+        if (!confirm('Akhiri sesi chat dengan admin?')) return;
+
+        const res2  = await fetch('/api/support.php', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ action: 'end_session_user' })
+        });
+        const data2 = await res2.json();
+        if (data2.success) {
+            showSessionEndedNotice();
+        }
+    } catch(e) {}
 }
 
 // ============================================================

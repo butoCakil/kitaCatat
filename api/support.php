@@ -123,6 +123,46 @@ if ($method === 'GET' && $action === 'session_status') {
 }
 
 // ============================================================
+// GET — Cek status sesi aktif (user)
+// ============================================================
+if ($method === 'GET' && $action === 'session_status_user') {
+    if (!$isUser) exit(json_encode(['success'=>false,'active'=>false]));
+
+    $stmt = $db->prepare(
+        "SELECT id FROM pending_shared
+         WHERE user_id=? AND status='waiting' AND target_groups='__support_session__'
+         LIMIT 1"
+    );
+    $stmt->execute([$myUserId]);
+    exit(json_encode(['success' => true, 'active' => (bool)$stmt->fetch()]));
+}
+
+// ============================================================
+// POST — User akhiri sesi sendiri
+// ============================================================
+if ($method === 'POST' && $action === 'end_session_user') {
+    if (!$isUser) exit(json_encode(['success'=>false,'message'=>'Unauthorized']));
+
+    $db->prepare(
+        "UPDATE pending_shared SET status='confirmed', resolved_at=NOW()
+         WHERE user_id=? AND status='waiting' AND target_groups='__support_session__'"
+    )->execute([$myUserId]);
+
+    // Kirim notif WA ke user sendiri
+    $stmtUser = $db->prepare("SELECT wa_number FROM users WHERE id=?");
+    $stmtUser->execute([$myUserId]);
+    $userRow = $stmtUser->fetch();
+    if ($userRow) {
+        WASender::send($userRow['wa_number'],
+            "🔒 Sesi chat dengan admin telah kamu akhiri.\n" .
+            "Kamu bisa mulai mencatat transaksi seperti biasa."
+        );
+    }
+
+    exit(json_encode(['success' => true]));
+}
+
+// ============================================================
 // POST — Kirim pesan
 // ============================================================
 if ($method === 'POST' && ($action === 'send' || isset($body['message']))) {
@@ -151,6 +191,22 @@ if ($method === 'POST' && ($action === 'send' || isset($body['message']))) {
         $stmt->execute([$targetUserId, $message]);
         $newId = $db->lastInsertId();
 
+        // Buka atau pertahankan sesi support untuk user ini
+        $stmtSess = $db->prepare(
+            "SELECT id FROM pending_shared
+             WHERE user_id = ? AND status = 'waiting' AND target_groups = '__support_session__'
+             LIMIT 1"
+        );
+        $stmtSess->execute([$targetUserId]);
+        if (!$stmtSess->fetch()) {
+            // Sesi belum aktif → buka
+            $db->prepare(
+                "INSERT INTO pending_shared (transaction_id, user_id, target_groups, status)
+                 VALUES (0, ?, '__support_session__', 'waiting')"
+            )->execute([$targetUserId]);
+        }
+        // Jika sudah aktif → biarkan, tidak perlu insert ulang
+
         // Kirim ke WA user
         $userStmt = $db->prepare("SELECT wa_number, name FROM users WHERE id=?");
         $userStmt->execute([$targetUserId]);
@@ -158,7 +214,24 @@ if ($method === 'POST' && ($action === 'send' || isset($body['message']))) {
 
         $waResult = ['success' => false];
         if ($user) {
-            $waMsg    = "💬 *Pesan dari Admin KitaCatat*\n\n" . $message;
+            // Ambil 1-2 pesan user terakhir sebelum balasan ini sebagai konteks
+            $stmtCtx = $db->prepare(
+                "SELECT message FROM support_messages
+                 WHERE user_id = ? AND sender = 'user'
+                 ORDER BY created_at DESC LIMIT 2"
+            );
+            $stmtCtx->execute([$targetUserId]);
+            $ctxMsgs = array_reverse($stmtCtx->fetchAll(PDO::FETCH_COLUMN));
+
+            $waMsg = "💬 *Pesan dari Admin KitaCatat*\n\n";
+            if (!empty($ctxMsgs)) {
+                $waMsg .= "_(Pertanyaan kamu:_\n";
+                foreach ($ctxMsgs as $ctx) {
+                    $waMsg .= "_• " . $ctx . "_\n";
+                }
+                $waMsg .= "_)_\n\n";
+            }
+            $waMsg   .= $message;
             $waResult = WASender::send($user['wa_number'], $waMsg);
         }
 

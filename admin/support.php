@@ -58,7 +58,7 @@ require_once __DIR__ . '/layout/header.php';
                     <a id="chatWALink" href="#" target="_blank" class="btn btn-sm btn-outline-success" style="font-size:11px;display:none">
                         <i class="fa-brands fa-whatsapp me-1"></i>Buka WA
                     </a>
-                    <button id="closeSessionBtn" onclick="closeSession()" class="btn btn-sm btn-outline-danger" style="font-size:11px;display:none" title="Tutup sesi chat WA user">
+                    <button id="closeSessionBtn" onclick="closeSession()" class="btn btn-sm btn-outline-danger" style="font-size:11px" title="Tutup sesi chat WA user">
                         <i class="fa-solid fa-lock me-1"></i>Tutup Sesi
                     </button>
                 </div>
@@ -206,15 +206,12 @@ async function openChat(userId, name, wa) {
     document.getElementById('chatWA').textContent       = wa;
     document.getElementById('chatAvatar').textContent   = (name||'?')[0].toUpperCase();
     document.getElementById('messagesArea').innerHTML   = '';
+    window._sessionWasActive = null; // reset state sesi
 
-    // Link WA
     // Link WA
     const waLink = document.getElementById('chatWALink');
     waLink.href  = 'https://wa.me/' + wa;
     waLink.style.display = '';
-
-    // Cek status sesi support aktif
-    checkSessionStatus(userId);
 
     // Load pesan
     if (polling) clearInterval(polling);
@@ -251,6 +248,17 @@ async function loadMessages(initial = false) {
         scrollToBottom();
         // Reload inbox untuk update badge
         loadInbox();
+    }
+
+    // Cek apakah sesi baru saja berakhir dari sisi user
+    if (currentUserId) {
+        const sessRes  = await fetch(`/api/support.php?action=session_status&user_id=${currentUserId}`);
+        const sessData = await sessRes.json();
+        const wasActive = window._sessionWasActive ?? false;
+        if (wasActive && !sessData.active) {
+            showSessionEndedNotice();
+        }
+        window._sessionWasActive = sessData.active;
     }
 }
 
@@ -312,7 +320,6 @@ async function sendReply() {
         });
         const data = await res.json();
         if (data.success) {
-            // Langsung load pesan terbaru tanpa optimistic render
             await loadMessages(false);
         }
     } catch(e) {
@@ -353,20 +360,36 @@ function showChatPanel() {
 // ============================================================
 // Cek status sesi support & tombol Tutup Sesi
 // ============================================================
-async function checkSessionStatus(userId) {
-    const btn = document.getElementById('closeSessionBtn');
-    btn.style.display = 'none';
-    try {
-        const res  = await fetch(`/api/support.php?action=session_status&user_id=${userId}`);
-        const data = await res.json();
-        if (data.success && data.active) {
-            btn.style.display = '';
-        }
-    } catch(e) {}
+
+function showSessionEndedNotice() {
+    const area = document.getElementById('messagesArea');
+    if (!area) return;
+    const div  = document.createElement('div');
+    div.style.cssText = 'text-align:center;margin:8px 0';
+    div.innerHTML = `<span style="background:#f1f5f9;color:#64748b;font-size:11.5px;padding:4px 14px;border-radius:10px;display:inline-block">
+        🔒 Sesi chat telah diakhiri
+    </span>`;
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
 }
 
 async function closeSession() {
     if (!currentUserId) return;
+
+    // Cek dulu apakah sesi aktif
+    try {
+        const res  = await fetch(`/api/support.php?action=session_status&user_id=${currentUserId}`);
+        const data = await res.json();
+
+        if (!data.active) {
+            alert('ℹ️ Tidak ada sesi chat yang sedang aktif untuk user ini.');
+            return;
+        }
+    } catch(e) {
+        alert('Gagal mengecek status sesi.');
+        return;
+    }
+
     if (!confirm('Tutup sesi chat WA dengan user ini? User akan dinotifikasi via WhatsApp.')) return;
 
     const btn = document.getElementById('closeSessionBtn');
@@ -380,8 +403,7 @@ async function closeSession() {
         });
         const data = await res.json();
         if (data.success) {
-            btn.style.display = 'none';
-            alert('Sesi ditutup. User sudah dinotifikasi via WhatsApp.');
+            showSessionEndedNotice();
         } else {
             alert('Gagal menutup sesi: ' + (data.message || 'Unknown error'));
         }

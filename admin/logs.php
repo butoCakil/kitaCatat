@@ -144,6 +144,30 @@ $otpLogs->execute();
 $otpLogs = $otpLogs->fetchAll();
 
 // ============================================================
+// TAB — Support Log
+// ============================================================
+$supportLog   = [];
+$supportTotal = 0;
+$supportPage  = max(1, (int)($_GET['spage'] ?? 1));
+if ($tab === 'supportlog') {
+    $countStmt = $db->query("SELECT COUNT(*) FROM support_messages");
+    $supportTotal = (int)$countStmt->fetchColumn();
+    $supportPages = max(1, (int)ceil($supportTotal / $perPage));
+    $supportPage  = min($supportPage, $supportPages);
+    $offset       = ($supportPage - 1) * $perPage;
+
+    $stmt = $db->prepare(
+        "SELECT sm.*, u.name AS user_name, u.wa_number
+         FROM support_messages sm
+         LEFT JOIN users u ON u.id = sm.user_id
+         ORDER BY sm.created_at DESC
+         LIMIT $perPage OFFSET $offset"
+    );
+    $stmt->execute();
+    $supportLog = $stmt->fetchAll();
+}
+
+// ============================================================
 // TAB 4 — Error Log
 // ============================================================
 $errorFiles = [];
@@ -326,6 +350,12 @@ function perPageSelector(int $current, string $tab, string $subtab = '', array $
         <a class="nav-link <?= $tab === 'dblog' ? 'active' : '' ?>"
            href="?tab=dblog&subtab=scheduled&limit=<?= $perPage ?>" style="font-size:13px;font-weight:600">
             <i class="fa-solid fa-database me-2"></i>Log DB
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?= $tab === 'supportlog' ? 'active' : '' ?>"
+           href="?tab=supportlog&limit=<?= $perPage ?>" style="font-size:13px;font-weight:600">
+            <i class="fa-solid fa-headset me-2"></i>Support Log
         </a>
     </li>
     <li class="nav-item">
@@ -883,6 +913,63 @@ if ($convFilter !== '' && isset($convMessages[$convFilter])) {
     </div>
 </div>
 <?php endif; /* end subtab */ ?>
+
+<?php /* ======================================================
+   TAB — SUPPORT LOG
+   ====================================================== */ ?>
+<?php elseif ($tab === 'supportlog'): ?>
+<div class="card">
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span><i class="fa-solid fa-headset me-2 text-muted"></i>Support Messages Log</span>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <?= perPageSelector($perPage, 'supportlog') ?>
+            <span class="text-muted" style="font-size:12px"><?= number_format($supportTotal) ?> entri</span>
+            <button class="btn btn-sm btn-outline-secondary" onclick="copyLogContent('support-log-box')"
+                style="font-size:11px;padding:3px 10px">
+                <i class="fa-solid fa-copy me-1"></i>Copy
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <?php if (empty($supportLog)): ?>
+        <div class="text-center text-muted py-5">
+            <i class="fa-solid fa-comments-slash fa-2x d-block mb-2" style="opacity:.3"></i>
+            Belum ada pesan support
+        </div>
+        <?php else: ?>
+        <div id="support-log-box" style="background:#0f172a;padding:16px;overflow-x:auto;max-height:600px;overflow-y:auto">
+            <?php foreach ($supportLog as $row):
+                $isUser  = $row['sender'] === 'user';
+                $color   = $isUser ? '#6ee7b7' : '#7dd3fc';
+                $dir     = $isUser ? '← USER' : '→ ADMIN';
+                $userName = $row['user_name'] ?? $row['wa_number'] ?? '?';
+                $name    = $isUser ? $userName : 'Admin';
+                $to      = $isUser ? '' : " [to: {$userName}]";
+                $preview = mb_substr(str_replace(["\n","\r"], ' ', $row['message']), 0, 200);
+                $ts      = date('Y-m-d H:i:s', strtotime($row['created_at']));
+                $read    = (!$isUser && $row['is_read']) ? ' ✓' : '';
+            ?>
+            <div style="font-family:var(--font-mono);font-size:12px;color:<?= $color ?>;padding:2px 0;line-height:1.5;white-space:pre-wrap"><?= htmlspecialchars(
+                "[{$ts}] {$dir} [{$name}]{$to}: {$preview}{$read}"
+            ) ?></div>
+            <?php endforeach; ?>
+        </div>
+        <?php if ($supportPages > 1): ?>
+        <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top">
+            <span style="font-size:12px;color:var(--text-muted)">Halaman <?= $supportPage ?> dari <?= $supportPages ?></span>
+            <div class="d-flex gap-1">
+                <?php if ($supportPage > 1): ?>
+                <a href="?tab=supportlog&limit=<?= $perPage ?>&spage=<?= $supportPage - 1 ?>" class="btn btn-sm btn-outline-secondary" style="font-size:11px">← Prev</a>
+                <?php endif; ?>
+                <?php if ($supportPage < $supportPages): ?>
+                <a href="?tab=supportlog&limit=<?= $perPage ?>&spage=<?= $supportPage + 1 ?>" class="btn btn-sm btn-outline-secondary" style="font-size:11px">Next →</a>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+        <?php endif; ?>
+    </div>
+</div>
 
 <?php /* ======================================================
    TAB 4 — ERROR LOG
