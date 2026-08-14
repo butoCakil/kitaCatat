@@ -16,51 +16,96 @@ class WASender
      */
     public static function send(string $target, string $message): array
     {
+        $useGateway = getAppSetting('wa_use_gateway', '1') === '1';
+
+        if ($useGateway) {
+            $result = self::sendViaGateway($target, $message);
+            if ($result['success']) {
+                self::writeOutgoingLog($target, $message, true, $result['detail'] ?? 'gateway');
+                return $result;
+            }
+            // Gateway gagal betulan -> fallback ke Fonnte bila diizinkan
+            if (getAppSetting('wa_fallback_fonnte', '1') === '1') {
+                error_log('[WASender] Gateway gagal, fallback Fonnte: ' . ($result['detail'] ?? ''));
+                $fb = self::sendViaFonnte($target, $message);
+                self::writeOutgoingLog($target, $message, $fb['success'], 'fallback-fonnte: ' . ($fb['detail'] ?? ''));
+                return $fb;
+            }
+            self::writeOutgoingLog($target, $message, false, 'gateway-fail: ' . ($result['detail'] ?? ''));
+            return $result;
+        }
+
+        $fb = self::sendViaFonnte($target, $message);
+        self::writeOutgoingLog($target, $message, $fb['success'], $fb['detail'] ?? null);
+        return $fb;
+    }
+
+    private static function sendViaGateway(string $target, string $message): array
+    {
+        $url   = getAppSetting('wa_gateway_send_url', '');
+        $token = getAppSetting('wa_gateway_send_token', '');
+        if ($url === '' || $token === '') {
+            return ['success' => false, 'detail' => 'gateway url/token belum diset'];
+        }
+
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode(['target' => $target, 'message' => $message]),
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $token,
+            ],
+            CURLOPT_TIMEOUT        => 15,
+        ]);
+        $response = curl_exec($curl);
+        if ($response === false) {
+            $err = curl_error($curl);
+            curl_close($curl);
+            return ['success' => false, 'detail' => 'CURL: ' . $err];
+        }
+        curl_close($curl);
+
+        $json = json_decode($response, true);
+        if (!$json) {
+            return ['success' => false, 'detail' => 'invalid response: ' . substr($response, 0, 120)];
+        }
+        return [
+            'success' => (bool)($json['status'] ?? false),
+            'detail'  => $json['detail'] ?? null,
+            'raw'     => $response,
+        ];
+    }
+
+    private static function sendViaFonnte(string $target, string $message): array
+    {
         $curl = curl_init();
         curl_setopt_array($curl, [
             CURLOPT_URL            => FONNTE_SEND_URL,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => [
-                'target'  => $target,
-                'message' => $message,
-            ],
-            // CURLOPT_HTTPHEADER => [
-            //     'Authorization: ' . FONNTE_TOKEN
-            // ],
-            CURLOPT_HTTPHEADER => [
-                'Authorization: ' . getAppSetting('fonnte_token', FONNTE_TOKEN)
-            ],
-            CURLOPT_TIMEOUT => 10,
+            CURLOPT_POSTFIELDS     => ['target' => $target, 'message' => $message],
+            CURLOPT_HTTPHEADER     => ['Authorization: ' . getAppSetting('fonnte_token', FONNTE_TOKEN)],
+            CURLOPT_TIMEOUT        => 10,
         ]);
-
         $response = curl_exec($curl);
-
         if ($response === false) {
             $error = curl_error($curl);
             curl_close($curl);
             error_log('[WASender] CURL ERROR: ' . $error);
-            self::writeOutgoingLog($target, $message, false, 'CURL ERROR: ' . $error);
             return ['success' => false, 'detail' => $error];
         }
-
         curl_close($curl);
 
-        // error_log('[DEBUG WASender] response: ' . $response);
-        
         $json = json_decode($response, true);
-
         if (!$json) {
             error_log('[WASender] Invalid JSON response: ' . $response);
-            self::writeOutgoingLog($target, $message, false, 'Invalid JSON response');
             return ['success' => false, 'detail' => 'Invalid response', 'raw' => $response];
         }
-
-        $success = $json['status'] ?? false;
-        self::writeOutgoingLog($target, $message, $success, $json['detail'] ?? null);
-
         return [
-            'success' => $success,
+            'success' => $json['status'] ?? false,
             'detail'  => $json['detail'] ?? null,
             'raw'     => $response,
         ];
@@ -117,6 +162,8 @@ class WASender
             $msg .= "Balas *NS* jika tidak ingin di-share.";
         }
 
+        $msg .= "\n\nDetail lengkap:\n> " . APP_URL . "/dashboard/transactions.php";
+
         return $msg;
     }
 
@@ -151,7 +198,7 @@ class WASender
             }
         }
 
-        $msg .= "\nDetail lengkap: " . APP_URL . "/dashboard";
+        $msg .= "\nDetail lengkap:\n> " . APP_URL . "/dashboard";
 
         return $msg;
     }

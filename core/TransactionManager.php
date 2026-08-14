@@ -275,12 +275,12 @@ class TransactionManager
         $stmt = $this->db->prepare(
             "SELECT COUNT(*) FROM transactions WHERE unique_code LIKE :prefix"
         );
-        $stmt->execute([':prefix' => "TXN-{$date}-%"]);
+        $stmt->execute([':prefix' => "{$date}%"]);
         $count = (int) $stmt->fetchColumn();
 
         $sequence = str_pad($count + 1, 4, '0', STR_PAD_LEFT);
 
-        return "TXN-{$date}-{$sequence}";
+        return "{$date}{$sequence}";
     }
 
     // ============================================================

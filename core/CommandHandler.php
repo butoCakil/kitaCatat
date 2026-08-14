@@ -166,7 +166,7 @@ class CommandHandler
                 $manager = new TransactionManager($this->user, $this->db);
                 $result  = $manager->softDelete($code);
                 if ($result['success']) {
-                    WASender::send($this->waNumber, "🗑️ Catatan [{$code}] berhasil dihapus.");
+                    WASender::send($this->waNumber, "🗑️ Catatan [{$code}] berhasil dihapus.\n\nDetail lengkap:\n> " . APP_URL . "/dashboard/transactions.php");
                 } else {
                     WASender::send($this->waNumber, "⚠️ " . ($result['message'] ?? 'Gagal menghapus.'));
                 }
@@ -516,7 +516,7 @@ class CommandHandler
         }
 
         WASender::send($this->waNumber,
-            "🗑️ Catatan [{$parsed['unique_code']}] berhasil dihapus."
+            "🗑️ Catatan [{$parsed['unique_code']}] berhasil dihapus.\nDetail lengkap:\n\n> " . APP_URL . "/dashboard/transactions.php"
         );
     }
 
@@ -983,7 +983,7 @@ class CommandHandler
 
 ";
 
-        $msg .= "📊 Dashboard: " . APP_URL;
+        $msg .= "📊 Dashboard:\n> " . APP_URL;
 
         WASender::send($this->waNumber, $msg);
     }

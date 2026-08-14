@@ -179,13 +179,13 @@ class NLPParser
 
         // Deteksi filter bulan
         $monthOnly = false;
-        if (preg_match('/bulan ini/i', $text)) {
+        if (preg_match('/bulan ini/i', $text)) {
             $monthOnly = true;
-            $text = trim(preg_replace('/bulan ini/i', '', $text));
+            $text = trim(preg_replace('/bulan ini/i', '', $text));
         }
 
         // Bersihkan kata "kemarin", "tadi", "terbaru" dll
-        $text = trim(preg_replace('/(kemarin|tadi|terbaru|terakhir|hari ini)/i', '', $text));
+        $text = trim(preg_replace('/(kemarin|tadi|terbaru|terakhir|hari ini)/i', '', $text));
 
         if (empty($text)) return ['intent' => self::INTENT_UNKNOWN];
 
@@ -228,13 +228,13 @@ class NLPParser
     private static function isHapus(string $msg): bool
     {
         return preg_match('/\b(hapus|delete|batalkan|batal|cancel)\b/i', $msg)
-            && preg_match('/\bTXN-\d{8}-\d{4}\b/i', $msg);
+            && preg_match('/\b\d{12}\b/', $msg);
     }
 
     private static function isEdit(string $msg): bool
     {
         return preg_match('/\b(edit|ubah|ralat|koreksi|ganti|update)\b/i', $msg)
-            && preg_match('/\bTXN-\d{8}-\d{4}\b/i', $msg);
+            && preg_match('/\b\d{12}\b/', $msg);
     }
 
     private static function isRekap(string $msg): bool
@@ -252,17 +252,17 @@ class NLPParser
     // ============================================================
     private static function parseHapus(string $msg): array
     {
-        preg_match('/\b(TXN-\d{8}-\d{4})\b/i', $msg, $m);
+        preg_match('/\b(\d{12})\b/', $msg, $m);
         return [
             'intent'      => self::INTENT_HAPUS,
-            'unique_code' => isset($m[1]) ? strtoupper($m[1]) : '',
+            'unique_code' => $m[1] ?? '',
         ];
     }
 
     private static function parseEdit(string $msg): array
     {
-        preg_match('/\b(TXN-\d{8}-\d{4})\b/i', $msg, $mCode);
-        $uniqueCode = isset($mCode[1]) ? strtoupper($mCode[1]) : '';
+        preg_match('/\b(\d{12})\b/', $msg, $mCode);
+        $uniqueCode = $mCode[1] ?? '';
 
         $field = '';
         $value = '';
@@ -675,8 +675,8 @@ class NLPParser
         // (undangan, promo, info dari platform, dll)
         if (mb_strlen($msg) <= 200) return false;
     
-        // Tapi kalau mengandung kode TXN (edit/hapus), tetap proses
-        if (preg_match('/\bTXN-\d{8}-\d{4}\b/i', $msg)) return false;
+        // Tapi kalau mengandung kode transaksi (edit/hapus), tetap proses
+        if (preg_match('/\b\d{12}\b/', $msg)) return false;
     
         // Kalau mengandung kata command jelas, tetap proses
         $commandWords = ['rekap', 'laporan', 'summary', 'hapus', 'edit', 'ubah', 'cari', 'saldo'];

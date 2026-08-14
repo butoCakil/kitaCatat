@@ -10,7 +10,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Paksa login jika belum
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /login.php');
+    header('Location: ' . APP_URL . '/login.php');
     exit;
 }
 
@@ -40,6 +40,11 @@ function navActive(string $page, string $current): string {
     <meta name="csrf-token" content="<?= csrfToken() ?>">
     <title><?= $pageTitle ?? 'Dashboard' ?> — KitaCatat</title>
     <link rel="icon" type="image/x-icon" href="../assets/img/icon/favicon.ico">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#16a34a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="KitaCatat">
+    <link rel="apple-touch-icon" href="/assets/img/icon/android-chrome-192x192.png">
 
     <!-- Bootstrap 5 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
