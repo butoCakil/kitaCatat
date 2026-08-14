@@ -149,9 +149,9 @@ if ($method === 'POST') {
     // Generate unique code
     $date     = date('Ymd', strtotime($createdAt));
     $stmtSeq  = $db->prepare("SELECT COUNT(*) FROM transactions WHERE unique_code LIKE :prefix");
-    $stmtSeq->execute([':prefix' => "TXN-{$date}-%"]);
+    $stmtSeq->execute([':prefix' => "{$date}%"]);
     $seq      = (int)$stmtSeq->fetchColumn() + 1;
-    $uniqueCode = "TXN-{$date}-" . str_pad($seq, 4, '0', STR_PAD_LEFT);
+    $uniqueCode = "{$date}" . str_pad($seq, 4, '0', STR_PAD_LEFT);
 
     $stmt = $db->prepare(
         "INSERT INTO transactions

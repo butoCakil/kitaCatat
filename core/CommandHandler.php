@@ -476,7 +476,7 @@ class CommandHandler
         if (empty($parsed['unique_code'])) {
             WASender::send($this->waNumber,
                 "⚠️ Kode transaksi tidak ditemukan.\n" .
-                "Contoh: _Edit TXN-20250320-0001 amount 60rb_"
+                "Contoh: _Edit 202503200001 amount 60rb_"
             );
             return;
         }
@@ -502,7 +502,7 @@ class CommandHandler
         if (empty($parsed['unique_code'])) {
             WASender::send($this->waNumber,
                 "⚠️ Kode transaksi tidak ditemukan.\n" .
-                "Contoh: _Hapus TXN-20250320-0001_"
+                "Contoh: _Hapus 202503200001_"
             );
             return;
         }
@@ -929,11 +929,11 @@ class CommandHandler
 
         $msg .= "*4. Edit & Hapus:*
 ";
-        $msg .= "• _Edit TXN-xxx amount 60rb_
+        $msg .= "• _Edit 202503200001 amount 60rb_
 ";
-        $msg .= "• _Edit TXN-xxx catatan bensin pertamax_
+        $msg .= "• _Edit 202503200001 catatan bensin pertamax_
 ";
-        $msg .= "• _Hapus TXN-xxx_ (akan minta konfirmasi)
+        $msg .= "• _Hapus 202503200001_ (akan minta konfirmasi)
 
 ";
 
@@ -998,7 +998,7 @@ class CommandHandler
             WASender::send($this->waNumber,
                 "⚠️ Kode transaksi tidak ditemukan.
 " .
-                "Contoh: _Hapus TXN-20260320-0001_"
+                "Contoh: _Hapus 202603200001_"
             );
             return;
         }
