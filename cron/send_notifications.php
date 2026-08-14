@@ -149,7 +149,7 @@ foreach ($schedulesByUser as $userId => $userScheds) {
 
         // Mode auto — langsung catat tanpa tanya
         if ($sched['mode'] === 'auto' && $sched['amount']) {
-            $code = 'TXN-' . date('Ymd') . '-' . str_pad(
+            $code = date('Ymd') . str_pad(
                 $db->query("SELECT COUNT(*)+1 FROM transactions WHERE DATE(created_at)=CURDATE()")->fetchColumn(),
                 4, '0', STR_PAD_LEFT
             );

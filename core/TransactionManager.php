@@ -265,7 +265,7 @@ class TransactionManager
     }
 
     // ============================================================
-    // HELPER: Generate unique code TXN-YYYYMMDD-XXXX
+    // HELPER: Generate unique code YYYYMMDDXXXX
     // ============================================================
     private function generateUniqueCode(): string
     {
