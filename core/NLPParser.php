@@ -40,6 +40,7 @@ class NLPParser
         if (self::isCari($msg))            return self::parseCari($msg);
         if (self::isHelp($msg))           return ['intent' => self::INTENT_HELP];
         if (self::isSupportMessage($msg)) return self::parseSupportMessage($msg);
+        if (self::isNolkanCommand($msg)) return self::parseNolkanCommand($msg);
         if (self::isSaldoHistoris($msg)) return self::parseSaldoHistoris($msg);
         if (self::isSaldoCheck($msg))    return self::parseSaldoCheck($msg);
         if (self::isCatatan($msg))       return self::parseCatatan($msg, $categories, $userId, $db);
@@ -79,11 +80,13 @@ class NLPParser
 
     private static function parseSaldoCheck(string $msg): array
     {
-        $amount = self::extractAmount($msg);
-
-        if ($amount <= 0) {
+        // Pastikan ada token angka eksplisit di pesan (termasuk "0"),
+        // bukan cuma andalkan hasil extractAmount() yang defaultnya 0
+        if (!preg_match('/\d/', $msg)) {
             return ['intent' => self::INTENT_UNKNOWN];
         }
+
+        $amount = self::extractAmount($msg);
 
         return [
             'intent' => self::INTENT_SALDO,
@@ -104,24 +107,24 @@ class NLPParser
 
     private static function parseSaldoHistoris(string $msg): array
     {
-        $amount = self::extractAmount($msg);
-        if ($amount <= 0) return ['intent' => self::INTENT_UNKNOWN];
-
-        $lower = strtolower($msg);
-        $now   = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
+        $lower       = strtolower($msg);
+        $now         = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
+        $periodMatch = ''; // frasa periode, dibuang sebelum baca nominal
 
         // Pattern: "N bulan lalu"
         if (preg_match('/(\d+)\s+bulan\s+lalu/i', $msg, $m)) {
-            $n     = (int)$m[1];
-            $dt    = (clone $now)->modify("-{$n} months");
-            $year  = $dt->format('Y');
-            $month = $dt->format('m');
+            $n           = (int)$m[1];
+            $dt          = (clone $now)->modify("-{$n} months");
+            $year        = $dt->format('Y');
+            $month       = $dt->format('m');
+            $periodMatch = $m[0];
         }
         // Pattern: "bulan lalu" / "bulan kemarin"
-        elseif (preg_match('/bulan\s+(lalu|kemarin)/i', $msg)) {
-            $dt    = (clone $now)->modify('-1 month');
-            $year  = $dt->format('Y');
-            $month = $dt->format('m');
+        elseif (preg_match('/bulan\s+(lalu|kemarin)/i', $msg, $m)) {
+            $dt          = (clone $now)->modify('-1 month');
+            $year        = $dt->format('Y');
+            $month       = $dt->format('m');
+            $periodMatch = $m[0];
         }
         // Pattern: nama bulan (+ tahun opsional)
         else {
@@ -135,14 +138,16 @@ class NLPParser
 
             foreach ($bulanMap as $nama => $nomor) {
                 if (str_contains($lower, $nama)) {
-                    $month = $nomor;
+                    $month       = $nomor;
+                    $periodMatch = $nama;
                     break;
                 }
             }
 
             // Cek apakah ada tahun eksplisit (4 digit)
             if (preg_match('/\b(20\d{2})\b/', $msg, $m)) {
-                $year = $m[1];
+                $year        = $m[1];
+                $periodMatch = trim($periodMatch . ' ' . $m[1]);
             }
 
             if (!$month) return ['intent' => self::INTENT_UNKNOWN];
@@ -158,11 +163,99 @@ class NLPParser
             }
         }
 
+        // Buang frasa periode dulu sebelum baca nominal — supaya angka tahun
+        // tidak salah terbaca sebagai nominal, dan "0" eksplisit tidak
+        // dianggap "tidak ada nominal".
+        $strippedMsg = $periodMatch !== ''
+            ? trim(str_ireplace($periodMatch, '', $msg))
+            : $msg;
+
+        if (!preg_match('/\d/', $strippedMsg)) {
+            return ['intent' => self::INTENT_UNKNOWN];
+        }
+
+        $amount = self::extractAmount($strippedMsg);
+
         return [
             'intent' => self::INTENT_SALDO_HISTORIS,
             'amount' => $amount,
             'year'   => $year,
             'month'  => $month,
+        ];
+    }
+
+    // ============================================================
+    // DETEKSI & PARSING: perintah "nolkan saldo [periode]"
+    // (tanpa perlu sebut nominal — target otomatis 0)
+    // ============================================================
+    private static function isNolkanCommand(string $msg): bool
+    {
+        return (bool) preg_match('/\b(nolkan|noklan|nolin)\b/i', $msg);
+    }
+
+    private static function parseNolkanCommand(string $msg): array
+    {
+        $lower = strtolower($msg);
+        $now   = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
+
+        // Pattern: "N bulan lalu"
+        if (preg_match('/(\d+)\s+bulan\s+lalu/i', $msg, $m)) {
+            $dt = (clone $now)->modify('-' . (int)$m[1] . ' months');
+            return [
+                'intent' => self::INTENT_SALDO_HISTORIS,
+                'amount' => 0,
+                'year'   => $dt->format('Y'),
+                'month'  => $dt->format('m'),
+            ];
+        }
+
+        // Pattern: "bulan lalu" / "bulan kemarin"
+        if (preg_match('/\bbulan\s+(lalu|kemarin)\b/i', $msg)) {
+            $dt = (clone $now)->modify('-1 month');
+            return [
+                'intent' => self::INTENT_SALDO_HISTORIS,
+                'amount' => 0,
+                'year'   => $dt->format('Y'),
+                'month'  => $dt->format('m'),
+            ];
+        }
+
+        // Pattern: nama bulan (+ tahun opsional)
+        $bulanMap = [
+            'januari'=>'01','februari'=>'02','maret'=>'03','april'=>'04',
+            'mei'=>'05','juni'=>'06','juli'=>'07','agustus'=>'08',
+            'september'=>'09','oktober'=>'10','november'=>'11','desember'=>'12'
+        ];
+        foreach ($bulanMap as $nama => $nomor) {
+            if (str_contains($lower, $nama)) {
+                $year = $now->format('Y');
+                if (preg_match('/\b(20\d{2})\b/', $msg, $mTahun)) {
+                    $year = $mTahun[1];
+                }
+
+                // Validasi: bulan yang dimaksud harus sebelum bulan ini
+                $targetDate = new DateTime("{$year}-{$nomor}-01", new DateTimeZone('Asia/Jakarta'));
+                $thisMonth  = new DateTime($now->format('Y-m') . '-01', new DateTimeZone('Asia/Jakarta'));
+                if ($targetDate >= $thisMonth) {
+                    return [
+                        'intent' => self::INTENT_UNKNOWN,
+                        'hint'   => 'saldo_bulan_ini',
+                    ];
+                }
+
+                return [
+                    'intent' => self::INTENT_SALDO_HISTORIS,
+                    'amount' => 0,
+                    'year'   => $year,
+                    'month'  => $nomor,
+                ];
+            }
+        }
+
+        // Tidak ada periode disebut → nolkan saldo kumulatif saat ini
+        return [
+            'intent' => self::INTENT_SALDO,
+            'amount' => 0,
         ];
     }
 
