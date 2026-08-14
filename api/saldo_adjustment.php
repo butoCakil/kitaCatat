@@ -29,7 +29,7 @@ $mode      = $input['mode'] ?? 'now'; // 'now' atau 'historis'
 $bulan     = (int)($input['bulan'] ?? 0); // 1-12
 $tahun     = (int)($input['tahun'] ?? 0);
 
-if ($saldoRiil <= 0) {
+if ($saldoRiil < 0) {
     echo json_encode(['success' => false, 'message' => 'Nominal tidak valid']);
     exit;
 }

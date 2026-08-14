@@ -452,6 +452,86 @@ for ($i = 5; $i >= 0; $i--) {
     $chartExpense[] = (int) ($row['exp'] ?? 0);
 }
 
+// --- Data saldo per bulan, 12 bulan terakhir (chart + tabel aksi) ---
+$saldoMonthsBack = 12;
+$saldo12Start    = date('Y-m-01 00:00:00', strtotime('-' . ($saldoMonthsBack - 1) . ' months', strtotime(date('Y-m-01'))));
+
+$stmtCoBefore = $db->prepare(
+    "SELECT
+        SUM(CASE WHEN type='income'  THEN amount ELSE 0 END) -
+        SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS carry_over
+     FROM transactions
+     WHERE user_id = ? AND deleted_at IS NULL AND created_at < ?"
+);
+$stmtCoBefore->execute([$userId, $saldo12Start]);
+$saldoCarryBefore = (int) ($stmtCoBefore->fetchColumn() ?? 0);
+
+$stmt12 = $db->prepare(
+    "SELECT
+        YEAR(created_at)  AS yr,
+        MONTH(created_at) AS mo,
+        SUM(CASE WHEN type='income'  THEN amount ELSE 0 END) AS inc,
+        SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS exp,
+        COUNT(*) AS trx_count
+     FROM transactions
+     WHERE user_id = ? AND deleted_at IS NULL
+       AND created_at >= ?
+     GROUP BY YEAR(created_at), MONTH(created_at)"
+);
+$stmt12->execute([$userId, $saldo12Start]);
+$rows12 = $stmt12->fetchAll();
+
+$by12Month = [];
+foreach ($rows12 as $r) {
+    $key = $r['yr'] . '-' . str_pad($r['mo'], 2, '0', STR_PAD_LEFT);
+    $by12Month[$key] = $r;
+}
+
+$bulanShort = ['01'=>'Jan','02'=>'Feb','03'=>'Mar','04'=>'Apr','05'=>'Mei','06'=>'Jun',
+               '07'=>'Jul','08'=>'Agu','09'=>'Sep','10'=>'Okt','11'=>'Nov','12'=>'Des'];
+
+$saldoBulanan     = [];
+$saldoChartLabels = [];
+$saldoChartNet    = [];
+$saldoChartCum    = [];
+$runningCum       = $saldoCarryBefore;
+$thisYm           = date('Y-m');
+
+for ($i = $saldoMonthsBack - 1; $i >= 0; $i--) {
+    $ts    = strtotime("-{$i} months", strtotime(date('Y-m-01')));
+    $ym    = date('Y-m', $ts);
+    $mm    = date('m', $ts);
+    $yy    = (int) date('Y', $ts);
+    $row   = $by12Month[$ym] ?? null;
+    $inc   = (int) ($row['inc'] ?? 0);
+    $exp   = (int) ($row['exp'] ?? 0);
+    $net   = $inc - $exp;
+    $count = (int) ($row['trx_count'] ?? 0);
+    $runningCum += $net;
+    $label = $bulanShort[$mm] . ' ' . $yy;
+
+    $saldoBulanan[] = [
+        'bulan'      => (int) $mm,
+        'tahun'      => $yy,
+        'label'      => $label,
+        'net'        => $net,
+        'cum'        => $runningCum,
+        'count'      => $count,
+        'is_current' => $ym === $thisYm,
+    ];
+
+    $saldoChartLabels[] = $label;
+    $saldoChartNet[]    = $net;
+    $saldoChartCum[]    = $runningCum;
+}
+
+// Total transaksi all-time (untuk tombol "Reset Saldo Semua")
+$stmtAllCount = $db->prepare(
+    "SELECT COUNT(*) FROM transactions WHERE user_id = ? AND deleted_at IS NULL"
+);
+$stmtAllCount->execute([$userId]);
+$resetAllCount = (int) $stmtAllCount->fetchColumn();
+
 function formatRp(int $amount): string
 {
     return 'Rp ' . number_format($amount, 0, ',', '.');
@@ -1221,6 +1301,67 @@ function formatRp(int $amount): string
     </div>
 </div>
 
+<!-- Saldo per Bulan (12 Bulan) -->
+<div class="card mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="fa-solid fa-chart-column me-2 text-muted"></i>Saldo per Bulan</span>
+        <span class="text-muted" style="font-size:12px">12 Bulan Terakhir</span>
+    </div>
+    <div class="card-body">
+        <canvas id="saldoBulananChart" height="110"></canvas>
+        <div style="display:flex;gap:18px;font-size:12px;color:#64748b;margin-top:10px;flex-wrap:wrap">
+            <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;background:#0891b2"></i>Saldo Bulan (batang)</span>
+            <span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;background:#7c3aed"></i>Saldo Kumulatif (garis)</span>
+        </div>
+
+        <div class="table-responsive mt-4">
+            <table class="table table-hover mb-0" style="font-size:13px">
+                <thead style="background:#f8fafc;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">
+                    <tr>
+                        <th class="px-3 py-2">Bulan</th>
+                        <th class="py-2 text-end">Saldo Bulan</th>
+                        <th class="py-2 text-end">Saldo Kumulatif</th>
+                        <th class="py-2 text-end pe-3">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($saldoBulanan as $sb): ?>
+                    <tr>
+                        <td class="px-3 py-2"><?= htmlspecialchars($sb['label']) ?></td>
+                        <td class="py-2 text-end" style="color:<?= $sb['net'] >= 0 ? 'var(--primary)' : 'var(--danger)' ?>">
+                            <?= ($sb['net'] < 0 ? '-' : '') . formatRp(abs($sb['net'])) ?>
+                        </td>
+                        <td class="py-2 text-end" style="color:<?= $sb['cum'] >= 0 ? 'var(--primary)' : 'var(--danger)' ?>">
+                            <?= ($sb['cum'] < 0 ? '-' : '') . formatRp(abs($sb['cum'])) ?>
+                        </td>
+                        <td class="py-2 text-end pe-3">
+                            <button class="btn btn-sm btn-outline-primary" style="font-size:11px;padding:3px 8px"
+                                onclick="openNolkanBulan(<?= $sb['bulan'] ?>, <?= $sb['tahun'] ?>, <?= $sb['is_current'] ? 'true' : 'false' ?>)">
+                                Nolkan Saldo
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" style="font-size:11px;padding:3px 8px"
+                                onclick="openResetModal('month', <?= $sb['bulan'] ?>, <?= $sb['tahun'] ?>, '<?= htmlspecialchars($sb['label'], ENT_QUOTES) ?>', <?= $sb['count'] ?>)"
+                                <?= $sb['count'] === 0 ? 'disabled' : '' ?>>
+                                Reset Saldo
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap mt-3 pt-3 border-top">
+            <button class="btn btn-sm btn-primary" onclick="openNolkanSemua()">
+                <i class="fa-solid fa-rotate-left me-1"></i>Nolkan Saldo Semua
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="openResetModal('all', '', '', 'Semua Transaksi', <?= $resetAllCount ?>)">
+                <i class="fa-solid fa-trash me-1"></i>Reset Saldo Semua
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Penyesuaian Saldo -->
 <div class="modal fade" id="saldoModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -1304,6 +1445,40 @@ function formatRp(int $amount): string
     </div>
 </div>
 
+<!-- Modal Reset Saldo -->
+<div class="modal fade" id="resetModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:var(--radius);border:1px solid var(--card-border)">
+            <div class="modal-header border-bottom" style="padding:16px 20px">
+                <h6 class="modal-title fw-bold">🗑️ Reset Saldo</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:20px">
+                <input type="hidden" id="resetScope">
+                <input type="hidden" id="resetBulan">
+                <input type="hidden" id="resetTahun">
+
+                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;font-size:13px;margin-bottom:16px;color:#991b1b">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    Akan menghapus <strong><span id="resetCount">0</span> transaksi</strong> di <strong><span id="resetLabel">-</span></strong>.
+                    Bisa direstore admin, tapi Anda tidak bisa membatalkannya sendiri.
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label" style="font-size:12px;font-weight:600">Masukkan password untuk konfirmasi</label>
+                    <input type="password" id="resetPassword" class="form-control" placeholder="Password Anda" autocomplete="current-password">
+                </div>
+
+                <div id="resetError" class="text-danger" style="font-size:12px;display:none;margin-top:8px"></div>
+            </div>
+            <div class="modal-footer border-top" style="padding:14px 20px">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" id="resetBtn" class="btn btn-sm btn-danger" onclick="confirmReset()">Ya, Reset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php ob_start(); ?>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -1373,6 +1548,73 @@ function formatRp(int $amount): string
                             grid: { color: '#f1f5f9' }
                         },
                         x: { grid: { display: false }, ticks: { font: { size: 12 } } }
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // Combo Chart — Saldo per Bulan (12 Bulan)
+        // ============================================================
+        var saldoBulananEl = document.getElementById('saldoBulananChart');
+        if (saldoBulananEl) {
+            var saldoNetData = <?php echo json_encode($saldoChartNet); ?>;
+            new Chart(saldoBulananEl.getContext('2d'), {
+                data: {
+                    labels: <?php echo json_encode($saldoChartLabels); ?>,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Saldo Bulan',
+                            data: saldoNetData,
+                            backgroundColor: saldoNetData.map(function (v) {
+                                return v >= 0 ? 'rgba(8,145,178,.75)' : 'rgba(220,38,38,.75)';
+                            }),
+                            borderRadius: 6,
+                            borderSkipped: false,
+                            order: 2
+                        },
+                        {
+                            type: 'line',
+                            label: 'Saldo Kumulatif',
+                            data: <?php echo json_encode($saldoChartCum); ?>,
+                            borderColor: '#7c3aed',
+                            backgroundColor: '#7c3aed',
+                            tension: 0.3,
+                            pointRadius: 3,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (c) { return ' ' + c.dataset.label + ': Rp ' + c.raw.toLocaleString('id-ID'); }
+                            }
+                        },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: function (v) {
+                                    if (Math.abs(v) >= 1000000) {
+                                        var jt = v / 1000000;
+                                        return 'Rp ' + (Number.isInteger(jt) ? jt : parseFloat(jt.toFixed(1))) + ' jt';
+                                    } else if (Math.abs(v) >= 1000) {
+                                        return 'Rp ' + Math.round(v / 1000) + ' rb';
+                                    } else {
+                                        return 'Rp ' + v;
+                                    }
+                                },
+                                font: { size: 11 }
+                            },
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
                     }
                 }
             });
@@ -1657,7 +1899,7 @@ function formatRp(int $amount): string
             const bulan = parseInt(document.getElementById('saldoBulan').value);
             const tahun = parseInt(document.getElementById('saldoTahun').value);
 
-            if (!riil || riil <= 0) {
+            if (isNaN(riil) || riil < 0) {
                 errEl.textContent = 'Masukkan nominal saldo yang valid.';
                 errEl.style.display = '';
                 return;
@@ -1766,6 +2008,94 @@ function formatRp(int $amount): string
             } finally {
                 document.getElementById('saldoBtn').disabled = false;
             }
+        }
+    }
+
+    // ============================================================
+    // Nolkan Saldo — reuse saldoModal, pre-filled riil=0
+    // ============================================================
+    async function openNolkanBulan(bulan, tahun, isCurrentMonth) {
+        openSaldoModal();
+        if (isCurrentMonth) {
+            setMode('now');
+        } else {
+            setMode('historis');
+            document.getElementById('saldoBulan').value = bulan;
+            document.getElementById('saldoTahun').value = tahun;
+        }
+        document.getElementById('saldoRiil').value = 0;
+        await saldoNext();
+    }
+
+    async function openNolkanSemua() {
+        openSaldoModal();
+        setMode('now');
+        document.getElementById('saldoRiil').value = 0;
+        await saldoNext();
+    }
+
+    // ============================================================
+    // Reset Saldo — hapus massal transaksi (destruktif)
+    // ============================================================
+    var resetModal = new bootstrap.Modal(document.getElementById('resetModal'));
+
+    function openResetModal(scope, bulan, tahun, label, count) {
+        document.getElementById('resetScope').value = scope;
+        document.getElementById('resetBulan').value = bulan || '';
+        document.getElementById('resetTahun').value = tahun || '';
+        document.getElementById('resetLabel').textContent = label;
+        document.getElementById('resetCount').textContent = count;
+        document.getElementById('resetPassword').value = '';
+        document.getElementById('resetError').style.display = 'none';
+        document.getElementById('resetBtn').disabled = false;
+        document.getElementById('resetBtn').textContent = 'Ya, Reset';
+        resetModal.show();
+    }
+
+    async function confirmReset() {
+        const errEl = document.getElementById('resetError');
+        errEl.style.display = 'none';
+
+        const password = document.getElementById('resetPassword').value;
+        if (!password) {
+            errEl.textContent = 'Masukkan password untuk konfirmasi.';
+            errEl.style.display = '';
+            return;
+        }
+
+        document.getElementById('resetBtn').disabled = true;
+        document.getElementById('resetBtn').textContent = 'Menghapus...';
+
+        try {
+            const res = await fetch('/api/reset_transactions.php', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    csrf_token: '<?= $_SESSION['csrf_token'] ?? '' ?>',
+                    scope:    document.getElementById('resetScope').value,
+                    bulan:    document.getElementById('resetBulan').value,
+                    tahun:    document.getElementById('resetTahun').value,
+                    password: password
+                })
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                errEl.textContent = data.message;
+                errEl.style.display = '';
+                document.getElementById('resetBtn').disabled = false;
+                document.getElementById('resetBtn').textContent = 'Ya, Reset';
+                return;
+            }
+
+            document.getElementById('resetBtn').textContent = 'Berhasil ✓';
+            setTimeout(() => location.reload(), 1000);
+
+        } catch (e) {
+            errEl.textContent = 'Terjadi kesalahan. Coba lagi.';
+            errEl.style.display = '';
+            document.getElementById('resetBtn').disabled = false;
+            document.getElementById('resetBtn').textContent = 'Ya, Reset';
         }
     }
 </script>

@@ -23,8 +23,9 @@ if (empty($input['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $
 
 $db      = getDB();
 $userId  = (int)$_SESSION['user_id'];
-$user    = $db->prepare("SELECT * FROM users WHERE id = ?")->execute([$userId]);
-$user    = $db->query("SELECT * FROM users WHERE id = $userId")->fetch();
+$stmtUser = $db->prepare("SELECT * FROM users WHERE id = ?");
+$stmtUser->execute([$userId]);
+$user     = $stmtUser->fetch();
 
 $selisih  = (int)($input['selisih']  ?? 0);
 $desc     = trim($input['deskripsi'] ?? '');
