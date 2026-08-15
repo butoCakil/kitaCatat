@@ -1023,6 +1023,66 @@ body {
     <div>Untuk menyesuaikan saldo <strong>bulan ini</strong>, gunakan: <code>Saldo sekarang [nominal]</code><br>
     Fitur saldo historis hanya berlaku untuk bulan-bulan yang sudah lewat.</div>
   </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:28px 0 14px">Nolkan Saldo (Set ke 0)</h3>
+  <p style="font-size:13.5px;color:var(--ink-muted);margin-bottom:16px">Cara cepat menyamakan saldo KitaCatat ke 0 tanpa perlu menyebut nominal — cocok setelah rekening benar-benar kosong atau ingin mulai pencatatan dari nol.</p>
+
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <span class="cmd-tag saldo">Nolkan Saldo</span>
+      <div class="cmd-example">nolkan saldo</div>
+      <div class="cmd-desc">Samakan saldo kumulatif KitaCatat (sampai hari ini) ke Rp0</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag saldo">Nolkan Saldo</span>
+      <div class="cmd-example">nolkan saldo bulan lalu</div>
+      <div class="cmd-desc">Samakan saldo kumulatif sampai akhir bulan lalu ke Rp0</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag saldo">Nolkan Saldo</span>
+      <div class="cmd-example">nolkan saldo maret 2026</div>
+      <div class="cmd-desc">Samakan saldo kumulatif sampai akhir bulan &amp; tahun tertentu ke Rp0</div>
+    </div>
+    <div class="cmd-card">
+      <span class="cmd-tag saldo">Nolkan Saldo</span>
+      <div class="cmd-example">nolkan saldo 2 bulan lalu</div>
+      <div class="cmd-desc">Format alternatif untuk bulan yang lebih jauh ke belakang</div>
+    </div>
+  </div>
+
+  <div class="chat-demo" style="margin-top:20px">
+    <div class="bubble-row right">
+      <div class="bubble user">nolkan saldo bulan lalu<div class="bubble-time">10.00 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        📊 <strong>Saldo Sebelumnya — Juli 2026</strong><br><br>
+        Saldo kamu &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: Rp0<br>
+        Saldo KitaCatat &nbsp;&nbsp;&nbsp;: Rp888.359<br>
+        &nbsp;&nbsp;Bulan Juli 2026 &nbsp;: -Rp888.359<br>
+        &nbsp;&nbsp;＋ Saldo sebelumnya: Rp888.359<br>
+        Selisih &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: 📉 Rp888.359<br><br>
+        Selisih ini akan dicatat sebagai <strong>pengeluaran</strong> di akhir Juli 2026.<br>
+        Deskripsinya apa? (contoh: potongan, transfer, penyesuaian)<br><br>
+        Atau balas <strong>batal</strong> untuk membatalkan.
+        <div class="bubble-time">10.00</div>
+      </div>
+    </div>
+    <div class="bubble-row right">
+      <div class="bubble user">tutup buku semester<div class="bubble-time">10.01 ✓✓</div></div>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble bot">
+        ✅ Saldo disesuaikan!<br>
+        <code>[202607310008]</code><br>
+        📉 Pengeluaran: <strong>Rp888.359</strong><br>
+        📝 Penyesuaian saldo: tutup buku semester<br>
+        🏷️ Lainnya
+        <div class="bubble-time">10.01</div>
+      </div>
+    </div>
+  </div>
+  <p class="chat-caption">Sama seperti "sisa [bulan] [nominal]" — bedanya nominal otomatis dianggap 0, tidak perlu diketik.</p>
 </section>
 
 <div class="divider"></div>
@@ -1124,6 +1184,11 @@ body {
       <div style="font-size:28px;margin-bottom:10px">📊</div>
       <div style="font-weight:700;font-size:14px;margin-bottom:6px">Overview</div>
       <div class="cmd-desc">Lihat ringkasan bulan ini: pemasukan, pengeluaran, saldo, jumlah transaksi, grafik 6 bulan, dan top kategori pengeluaran.</div>
+    </div>
+    <div class="cmd-card">
+      <div style="font-size:28px;margin-bottom:10px">🔄</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Saldo per Bulan</div>
+      <div class="cmd-desc">Grafik 12 bulan terakhir (batang = saldo bulan, garis = saldo kumulatif). Tiap bulan bisa <strong>Nolkan Saldo</strong> (catat penyesuaian ke Rp0) atau <strong>Reset Saldo</strong> (hapus transaksi, perlu password) — tersedia juga tombol untuk semua bulan sekaligus.</div>
     </div>
     <div class="cmd-card">
       <div style="font-size:28px;margin-bottom:10px">📋</div>
@@ -1544,7 +1609,7 @@ body {
         <a href="/terms-of-service.html" style="font-size:11px; color: #888; text-decoration: none;">Syarat & Ketentuan</a>
     </p>
 
-  <p style="margin-top:8px;font-size:12px">© 2026 KitaCatat &mdash; Bendz Production</p>
+  <p style="margin-top:8px;font-size:12px">© 2026 KitaCatat &mdash; <a href="https://simbiot.id" target="_blank" style="color:#374151;text-decoration:none">Simbiot.id Production</a></p>
 </div>
 <script>
 const sections = document.querySelectorAll('.section[id]');

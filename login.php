@@ -212,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isLocked) {
 </head>
 <body>
 <div class="login-card" style="position:relative;">
-    <a href="https://kitacatat.masbendz.com/" style="position:absolute;top:14px;left:14px;color:rgba(255,255,255,.4);font-size:28px;text-decoration:none;z-index:1;transition:color .15s;" onmouseover="this.style.color='rgba(255,255,255,.9)'" onmouseout="this.style.color='rgba(255,255,255,.4)'" title="Kembali ke halaman utama">
+    <a href="https://kitacatat.simbiot.id/" style="position:absolute;top:14px;left:14px;color:rgba(255,255,255,.4);font-size:28px;text-decoration:none;z-index:1;transition:color .15s;" onmouseover="this.style.color='rgba(255,255,255,.9)'" onmouseout="this.style.color='rgba(255,255,255,.4)'" title="Kembali ke halaman utama">
         <i class="fa-solid fa-arrow-left"></i>
     </a>
     <div class="login-header">

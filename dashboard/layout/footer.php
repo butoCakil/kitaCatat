@@ -2,7 +2,7 @@
 
     <!-- Footer legal -->
     <div style="padding:14px 24px;border-top:1px solid var(--card-border);display:flex;align-items:center;justify-content:center;gap:16px;font-size:11.5px;color:var(--text-muted)">
-        <span>© 2026 KitaCatat &mdash; Bendz Production</span>
+        <span>© 2026 KitaCatat &mdash; <a href="https://simbiot.id" target="_blank" style="color:#374151;text-decoration:none">Simbiot.id Production</a></span>
         <span style="color:var(--card-border)">|</span>
         <a href="/privacy-policy.html" target="_blank" style="color:var(--text-muted);text-decoration:none" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">Kebijakan Privasi</a>
         <span style="color:var(--card-border)">|</span>
